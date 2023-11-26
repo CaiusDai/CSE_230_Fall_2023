@@ -51,3 +51,16 @@ width  = 20
 
 initGame :: IO Game 
 initGame = do 
+    let xm = width `div` 2
+        ym = height `div` 2
+        g  = Game { 
+            _snake  = (S.singleton (V2 xm ym))
+            , _food   = f
+            , _foods  = fs
+            , _score  = 0
+            , _dir    = North
+            , _dead   = False
+            , _paused = True
+            , _locked = False
+        }
+    return $ execState nextFood g
