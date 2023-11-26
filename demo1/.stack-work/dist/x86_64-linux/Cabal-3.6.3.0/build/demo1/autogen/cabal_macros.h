@@ -30,6 +30,26 @@
   (major1) == 0 && (major2) <  6 || \
   (major1) == 0 && (major2) == 6 && (minor) <= 5)
 #endif /* MIN_VERSION_containers */
+/* package extra-1.7.13 */
+#ifndef VERSION_extra
+#define VERSION_extra "1.7.13"
+#endif /* VERSION_extra */
+#ifndef MIN_VERSION_extra
+#define MIN_VERSION_extra(major1,major2,minor) (\
+  (major1) <  1 || \
+  (major1) == 1 && (major2) <  7 || \
+  (major1) == 1 && (major2) == 7 && (minor) <= 13)
+#endif /* MIN_VERSION_extra */
+/* package lens-5.1.1 */
+#ifndef VERSION_lens
+#define VERSION_lens "5.1.1"
+#endif /* VERSION_lens */
+#ifndef MIN_VERSION_lens
+#define MIN_VERSION_lens(major1,major2,minor) (\
+  (major1) <  5 || \
+  (major1) == 5 && (major2) <  1 || \
+  (major1) == 5 && (major2) == 1 && (minor) <= 1)
+#endif /* MIN_VERSION_lens */
 /* package linear-1.21.10 */
 #ifndef VERSION_linear
 #define VERSION_linear "1.21.10"
@@ -40,6 +60,16 @@
   (major1) == 1 && (major2) <  21 || \
   (major1) == 1 && (major2) == 21 && (minor) <= 10)
 #endif /* MIN_VERSION_linear */
+/* package transformers-0.5.6.2 */
+#ifndef VERSION_transformers
+#define VERSION_transformers "0.5.6.2"
+#endif /* VERSION_transformers */
+#ifndef MIN_VERSION_transformers
+#define MIN_VERSION_transformers(major1,major2,minor) (\
+  (major1) <  0 || \
+  (major1) == 0 && (major2) <  5 || \
+  (major1) == 0 && (major2) == 5 && (minor) <= 6)
+#endif /* MIN_VERSION_transformers */
 
 /* tool gcc-10 */
 #ifndef TOOL_VERSION_gcc
@@ -123,7 +153,7 @@
 #endif /* MIN_TOOL_VERSION_strip */
 
 #ifndef CURRENT_COMPONENT_ID
-#define CURRENT_COMPONENT_ID "demo1-0.1.0.0-DVMUHrJX53OQuNpbUXa0h-demo1"
+#define CURRENT_COMPONENT_ID "demo1-0.1.0.0-LxLGwFVAB2QBPmTZvU2m2L-demo1"
 #endif /* CURRENT_COMPONENT_ID */
 #ifndef CURRENT_PACKAGE_VERSION
 #define CURRENT_PACKAGE_VERSION "0.1.0.0"

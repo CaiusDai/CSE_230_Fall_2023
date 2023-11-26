@@ -1,13 +1,13 @@
 module Sokoban(
-    test
+    test1
 )where 
 
-import Main(main)
+-- import Main(main)
 import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.State
-import Data.Sequence (Seq(..), (<|))
 import Linear.V2 (V2(..), _x, _y)
-
+import Data.Sequence (Seq(..), (<|))
+import qualified Data.Sequence as S
 
 data Game = Game {
     -- components
@@ -21,7 +21,7 @@ data Game = Game {
         _dir    :: Direction,
         _score  :: Int,
         _dead   :: Bool
-}
+}deriving(Show)
 
 
 type Coord = V2 Int
@@ -35,32 +35,31 @@ data Direction
 
 
 
-step :: Game -> Game 
-
-
-
-occupyTarget :: MaybeT (State Game) 
-occupyTarget = do 
-
-
 -- UI
 height :: Int 
 width  :: Int 
-height = 20 
-width  = 20 
+height = 6 
+width  = 6 
 
-initGame :: IO Game 
-initGame = do 
-    let xm = width `div` 2
-        ym = height `div` 2
-        g  = Game { 
-            _snake  = (S.singleton (V2 xm ym))
-            , _food   = f
-            , _foods  = fs
-            , _score  = 0
-            , _dir    = North
-            , _dead   = False
-            , _paused = True
-            , _locked = False
+xm = width `div` 2
+ym = height `div` 2
+wall = S.fromList [V2 x y | x <- [0..width-1], y <- [0, height-1]] <>
+        S.fromList [V2 x y | x <- [0, width-1], y <- [1..height-2]]
+target = V2 (xm - 1) (ym - 1)
+targets = S.fromList [target]
+box = V2 (xm + 1) (ym + 1)
+boxes = S.fromList [box]
+
+
+test1 :: Game 
+test1 = Game
+        { _user   = V2 xm ym
+        , _box    = box
+        , _boxes  = boxes
+        , _walls  = wall
+        , _target = target
+        , _targets = targets
+        , _dir    = Up    
+        , _score  = 0
         }
-    return $ execState nextFood g
+    
