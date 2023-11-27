@@ -43,7 +43,7 @@ getBinDir, getLibDir, getDynLibDir, getDataDir, getLibexecDir, getSysconfDir :: 
 
 bindir, libdir, dynlibdir, datadir, libexecdir, sysconfdir :: FilePath
 bindir     = "/workspaces/CSE_230_Fall_2023/demo1/.stack-work/install/x86_64-linux/3af379905b5fc33534d6fb252a2f15fb5a6a3f848d43b1ddd0a66ea6b59cf1f4/9.2.7/bin"
-libdir     = "/workspaces/CSE_230_Fall_2023/demo1/.stack-work/install/x86_64-linux/3af379905b5fc33534d6fb252a2f15fb5a6a3f848d43b1ddd0a66ea6b59cf1f4/9.2.7/lib/x86_64-linux-ghc-9.2.7/demo1-0.1.0.0-LxLGwFVAB2QBPmTZvU2m2L-demo1"
+libdir     = "/workspaces/CSE_230_Fall_2023/demo1/.stack-work/install/x86_64-linux/3af379905b5fc33534d6fb252a2f15fb5a6a3f848d43b1ddd0a66ea6b59cf1f4/9.2.7/lib/x86_64-linux-ghc-9.2.7/demo1-0.1.0.0-47q7xsCpfdIAAxfthzAF6v-demo1"
 dynlibdir  = "/workspaces/CSE_230_Fall_2023/demo1/.stack-work/install/x86_64-linux/3af379905b5fc33534d6fb252a2f15fb5a6a3f848d43b1ddd0a66ea6b59cf1f4/9.2.7/lib/x86_64-linux-ghc-9.2.7"
 datadir    = "/workspaces/CSE_230_Fall_2023/demo1/.stack-work/install/x86_64-linux/3af379905b5fc33534d6fb252a2f15fb5a6a3f848d43b1ddd0a66ea6b59cf1f4/9.2.7/share/x86_64-linux-ghc-9.2.7/demo1-0.1.0.0"
 libexecdir = "/workspaces/CSE_230_Fall_2023/demo1/.stack-work/install/x86_64-linux/3af379905b5fc33534d6fb252a2f15fb5a6a3f848d43b1ddd0a66ea6b59cf1f4/9.2.7/libexec/x86_64-linux-ghc-9.2.7/demo1-0.1.0.0"

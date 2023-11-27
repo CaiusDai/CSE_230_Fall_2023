@@ -60,6 +60,16 @@
   (major1) == 1 && (major2) <  21 || \
   (major1) == 1 && (major2) == 21 && (minor) <= 10)
 #endif /* MIN_VERSION_linear */
+/* package random-1.2.1.1 */
+#ifndef VERSION_random
+#define VERSION_random "1.2.1.1"
+#endif /* VERSION_random */
+#ifndef MIN_VERSION_random
+#define MIN_VERSION_random(major1,major2,minor) (\
+  (major1) <  1 || \
+  (major1) == 1 && (major2) <  2 || \
+  (major1) == 1 && (major2) == 2 && (minor) <= 1)
+#endif /* MIN_VERSION_random */
 /* package transformers-0.5.6.2 */
 #ifndef VERSION_transformers
 #define VERSION_transformers "0.5.6.2"
@@ -70,6 +80,16 @@
   (major1) == 0 && (major2) <  5 || \
   (major1) == 0 && (major2) == 5 && (minor) <= 6)
 #endif /* MIN_VERSION_transformers */
+/* package vty-5.37 */
+#ifndef VERSION_vty
+#define VERSION_vty "5.37"
+#endif /* VERSION_vty */
+#ifndef MIN_VERSION_vty
+#define MIN_VERSION_vty(major1,major2,minor) (\
+  (major1) <  5 || \
+  (major1) == 5 && (major2) <  37 || \
+  (major1) == 5 && (major2) == 37 && (minor) <= 0)
+#endif /* MIN_VERSION_vty */
 
 /* tool gcc-10 */
 #ifndef TOOL_VERSION_gcc
@@ -153,7 +173,7 @@
 #endif /* MIN_TOOL_VERSION_strip */
 
 #ifndef CURRENT_COMPONENT_ID
-#define CURRENT_COMPONENT_ID "demo1-0.1.0.0-LxLGwFVAB2QBPmTZvU2m2L-demo1"
+#define CURRENT_COMPONENT_ID "demo1-0.1.0.0-47q7xsCpfdIAAxfthzAF6v-demo1"
 #endif /* CURRENT_COMPONENT_ID */
 #ifndef CURRENT_PACKAGE_VERSION
 #define CURRENT_PACKAGE_VERSION "0.1.0.0"

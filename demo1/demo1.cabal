@@ -25,9 +25,9 @@ executable demo1
                        , containers
                        , extra
                        , lens
-                      --  , random
+                       , random
                        , transformers
-                      --  , vty
+                       , vty
   ghc-options:         -Wall
                        -Wcompat
                        -Widentities

@@ -8,6 +8,8 @@ import Control.Monad.Trans.State
 import Linear.V2 (V2(..), _x, _y)
 import Data.Sequence (Seq(..), (<|))
 import qualified Data.Sequence as S
+import Data.Maybe (fromMaybe)
+import Control.Lens hiding ((<|), (|>), (:>), (:<))
 
 data Game = Game {
     -- components
@@ -19,7 +21,7 @@ data Game = Game {
         _targets:: Seq Coord,
     -- states
         _dir    :: Direction,
-        _score  :: Int,
+        -- _score  :: Int,
         _dead   :: Bool
 }deriving(Show)
 
@@ -32,14 +34,46 @@ data Direction
     | Right 
     deriving(Show, Eq) 
 
+findBoxIndex :: Coord -> Game -> Maybe Int
+findBoxIndex targetBoxCoord game = elemIndexL targetBoxCoord (_boxes game)
 
+step :: Direction -> Game -> Game
+step d g = do
+    -- get next pos of user  
+    let next = nextPos d (g ^. user)
+        in if elem next (g ^. walls)
+            then g
+            else case findBoxIndex next g of
+                    Nothing -> g & user %~ next
+                    Just boxIndex ->
+                        let nextBox = nextPos d (g ^. boxes !! boxIndex)
+                        in if notElem nextBox (g ^. walls) && notElem nextBox (g ^. boxes)
+                            then g & boxes . element boxIndex %~ (\c -> nextPos d c) & user %~ nextPos d g^.user 
+                            else g
+
+
+-- next pos of user
+nextPos :: Direction -> Coord -> Coord
+nextPos Up    pos = pos & y %~ (\y -> y + 1)
+nextPos Down  pos = pos & y %~ (\y -> y - 1)
+nextPos Left  pos = pos & x %~ (\x -> x - 1)
+nextPos Right pos = pos & x %~ (\x -> x + 1)
+nextPos _ = error "Error direction!"
+
+-- deadLoc = [V2 0 0, V2 0 (width-1), V2 (height-1) 0, V2 (height-1) ((width-1))]
+
+
+die :: MaybeT (State Game) ()
+die = do
+  MaybeT . fmap guard $ elem <$> (nextHead <$> get) <*> (use snake)
+  MaybeT . fmap Just $ dead .= True
 
 
 -- UI
 height :: Int 
 width  :: Int 
-height = 6 
-width  = 6 
+height = 10
+width  = 10
 
 xm = width `div` 2
 ym = height `div` 2
@@ -60,6 +94,6 @@ test1 = Game
         , _target = target
         , _targets = targets
         , _dir    = Up    
-        , _score  = 0
+        -- , _score  = 0
         }
     
