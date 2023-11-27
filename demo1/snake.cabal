@@ -1,11 +1,11 @@
 name:                snake
 version:             0.1.0.0
-homepage:            https://github.com/SamTay/snake#readme
+homepage:            https://github.com/githubuser/demo1#readme
 license:             BSD3
 license-file:        LICENSE
-author:              Sam Tay
-maintainer:          sam.chong.tay@pm.me
-copyright:           2021 Sam Tay
+author:              Author name here
+maintainer:          example@example.com
+copyright:           2023 Author name here
 category:            Web
 build-type:          Simple
 cabal-version:       >=1.10
