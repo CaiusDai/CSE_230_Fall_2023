@@ -10,6 +10,7 @@ import Data.Sequence (Seq(..), (<|))
 import qualified Data.Sequence as S
 import Data.Maybe (fromMaybe)
 import Control.Lens hiding ((<|), (|>), (:>), (:<))
+import Data.Set (fromList)
 
 data Game = Game {
     -- components
@@ -34,22 +35,21 @@ data Direction
     | Right 
     deriving(Show, Eq) 
 
-findBoxIndex :: Coord -> Game -> Maybe Int
-findBoxIndex targetBoxCoord game = elemIndexL targetBoxCoord (_boxes game)
 
-step :: Direction -> Game -> Game
-step d g = do
-    -- get next pos of user  
-    let next = nextPos d (g ^. user)
-        in if elem next (g ^. walls)
-            then g
-            else case findBoxIndex next g of
-                    Nothing -> g & user %~ next
-                    Just boxIndex ->
-                        let nextBox = nextPos d (g ^. boxes !! boxIndex)
-                        in if notElem nextBox (g ^. walls) && notElem nextBox (g ^. boxes)
-                            then g & boxes . element boxIndex %~ (\c -> nextPos d c) & user %~ nextPos d g^.user 
-                            else g
+
+-- step :: Direction -> Game -> Game
+-- step d g = do
+--     -- get next pos of user  
+--     let next = nextPos d (g ^. user)
+--         in if elem next (g ^. walls)
+--             then g
+--             else case findBoxIndex next g of
+--                     Nothing -> g & user %~ next
+--                     Just boxIndex ->
+--                         let nextBox = nextPos d (g ^. boxes !! boxIndex)
+--                         in if notElem nextBox (g ^. walls) && notElem nextBox (g ^. boxes)
+--                             then g & boxes . element boxIndex %~ (\c -> nextPos d c) & user %~ nextPos d g^.user 
+--                             else g
 
 
 -- next pos of user
@@ -97,3 +97,59 @@ test1 = Game
         -- , _score  = 0
         }
     
+
+-- Given: pos of user
+-- 1. 人前面是空地:人移动
+-- 2. 人前面是箱子:
+--    1) 箱子的前面不是箱子也不是墙 箱子移动，人移动
+-- 其他情况：状态不变
+
+findIndex :: a -> Seq a -> Maybe Int
+findIndex element seq = elemIndexL element seq
+
+step :: Direction -> Game -> Game
+step d g =
+    let nextUserPos = nextPos d (g ^. user)
+        isNextWall = findIndex nextUserPos (g ^. walls)
+        isNextBox = findIndex nextUserPos (g ^. boxes)
+    in
+        case isNextBox of
+            Nothing ->
+                case isNextWall of
+                    Nothing -> 
+                        -- move
+                        g & user .~ nextUserPos
+                    Just _ -> 
+                        g
+                        -- handle collision with wall (do nothing)
+            Just nextBoxPos -> 
+                -- handle collision with box
+                let nextBoxPos = nextPos d nextUserPos 
+                    isNextNextWall = findIndex nextBoxPos (g ^. walls)
+                    isNextNextBox  = findIndex nextBoxPos (g ^. boxes)
+                    isNextNextTarget = findIndex nextBoxPos (g ^. targets)
+                in 
+                    case isNextNextWall of 
+                        Nothing -> 
+                            case isNextNextBox of 
+                                Nothing -> 
+                                    case isNextNextTarget of 
+                                        Nothing -> 
+                                            -- move user, move box
+                                            g & user .~ nextUserPos
+                                            g & boxes .~ moveBox isNextBox nextUserPos (g ^. boxes) 
+                                        Just targetIndex -> 
+                                            -- setTarget 
+                                            g & user .~ nextUserPos
+                                            g & boxes .~ moveBox isNextBox nextUserPos (g ^. boxes) 
+
+moveBox :: Seq Coord -> Int -> Coord -> Seq Coord 
+moveBox boxes index nextBoxPos = update index nextBoxPos boxes
+
+successCheck :: Game -> Bool 
+successCheck g = 
+    let targetsSet = fromList $ toList g ^. targets 
+        boxesSet   = fromList $ toList g ^. boxes 
+    in targetsList == boxesList
+
+
