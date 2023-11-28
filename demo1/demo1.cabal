@@ -1,4 +1,4 @@
-name:                snake
+name:                demo1
 version:             0.1.0.0
 homepage:            https://github.com/githubuser/demo1#readme
 license:             BSD3
@@ -11,11 +11,10 @@ build-type:          Simple
 cabal-version:       >=1.10
 extra-source-files:  README.md
 
-executable snake
+executable demo1
   hs-source-dirs:      src
-  other-modules:       Snake
-                     , UI
   main-is:             Main.hs
+  other-modules:       Sokoban
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N
   default-language:    Haskell2010
   build-depends:       base         >= 4.7 && < 5
