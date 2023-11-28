@@ -26,6 +26,7 @@ data GameState = GameState{
     playerPos :: (Int, Int),
     boxPos :: [(Int, Int)],
     wallPos :: [(Int, Int)],
+    targetPos :: [(Int, Int)],
     score :: Int
 }
 
@@ -34,7 +35,11 @@ initialState :: GameState
 initialState = GameState{
     playerPos = (3, 3),
     boxPos = [(5, 5), (4, 4), (6, 6)],
-    wallPos = [(0,0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6)],
+    wallPos = [ (x, 0) | x <- [0..9]] ++ 
+              [ (x, 9) | x <- [0..9]] ++  
+              [ (0, y) | y <- [1..8]] ++ 
+              [ (9, y) | y <- [1..8]],     
+    targetPos = [(6, 7), (2, 3), (4, 3)],
     score = 100
 }
 
@@ -43,6 +48,7 @@ theMap = attrMap V.defAttr
     [ (playerAttr, fg V.green)
     , (boxAttr, fg V.red)
     , (wallAttr, fg V.black)
+    , (targetAttr, fg V.blue)
     ]
 
 movePlayer :: (Int, Int) -> EventM () GameState ()
@@ -117,6 +123,7 @@ drawGame gs = center $ border $ vBox rows
             | pos == playerPos gs = withAttr playerAttr $ str " P "
             | pos `elem` boxPos gs = withAttr boxAttr $ str " B "
             | pos `elem` wallPos gs = withAttr wallAttr $ str " W "
+            | pos `elem` targetPos gs = withAttr targetAttr $ str " T "
             | otherwise = str "   "
 
 
@@ -125,7 +132,7 @@ playerAttr, boxAttr :: AttrName
 playerAttr = attrName "playerAttr"
 boxAttr = attrName "boxAttr"
 wallAttr = attrName "wallAttr"
-
+targetAttr = attrName "targetAttr"
 
 -- Box User, HandleEvent
 -- Stats, Wall
