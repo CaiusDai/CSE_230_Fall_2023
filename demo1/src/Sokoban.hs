@@ -3,10 +3,10 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Sokoban (
-    test1,
+    b1, b2,
     user, boxes, walls, targets,
     getUser, getBoxes, getTargets, getWall,
-    step,
+    step, checkSuccess,
     up, down, left, right,
     nextPos
 ) where
@@ -61,8 +61,8 @@ targets' = S.fromList [target']
 box' = V2 (xm + 1) (ym + 1)
 boxes' = S.fromList [box']
 
-test1 :: Game
-test1 = Game
+b1 :: Game
+b1 = Game
         { _user    = V2 xm ym
         , _box     = box'
         , _boxes   = boxes'
@@ -74,11 +74,33 @@ test1 = Game
         , _dead    = False
         }
 
+boxes'' =  S.fromList[V2 6 4, V2 6 6]
+targets'' = S.fromList[V2 6 3, V2 6 7]
+b2 :: Game
+b2 = Game
+        { _user    = V2 xm ym
+        , _box     = box'
+        , _boxes   = boxes''
+        , _walls   = wall
+        , _target  = target'
+        , _targets = targets''
+        , _dir     = Up
+        -- , _score  = 0
+        , _dead    = False
+        }
+
 findIndex :: Coord -> Seq Coord -> Maybe Int
 findIndex element seq = elemIndexL element seq
 
 moveBox :: Int -> Coord -> Seq Coord -> Seq Coord
 moveBox index newValue seq = (update index newValue seq)
+
+checkSuccess :: Seq Coord -> Seq Coord -> Bool 
+checkSuccess  seq1 seq2 = 
+    let set1 = fromList (toList seq1)
+        set2 = fromList (toList seq2) 
+    in 
+        if set1 == set2 then True else False
 
 step :: Direction -> Game -> Game
 step d g =
@@ -93,7 +115,7 @@ step d g =
                         -- move
                         g & user .~ nextUserPos --[checked]
                     Just _ ->
-                      g
+                        g
             Just nextBoxIndex -> -- the index of the box
                 -- handle collision with box
                 let nextBoxPos = nextUserPos
