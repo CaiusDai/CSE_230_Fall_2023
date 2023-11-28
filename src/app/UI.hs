@@ -81,8 +81,10 @@ boardSize :: Int
 boardSize = 10  -- Change this value to your desired board size
 
 drawUI :: GameState -> [Widget ()]
-drawUI g =  [drawGame g]
-
+drawUI g = [center $ withBorderStyle BS.unicode
+            $ borderWithLabel (str " Sokoban Game ")
+            $ hLimit 80 $ vLimit 30
+            $ hBox [padRight (Pad 2) (drawScore g), drawGame g, padLeft (Pad 2) drawHelp]]
 
 
 drawScore :: GameState -> Widget ()
@@ -92,9 +94,22 @@ drawScore g = withBorderStyle BS.unicode
                 $ hLimit 20 
                 $ str $ "Score: " ++ show (score g)
 
+drawHelp :: Widget ()
+drawHelp = withBorderStyle BS.unicode
+            $ borderWithLabel (str " Help ")
+            $ padAll 1
+            $ vBox [ str "Controls:"
+                   , str " W - Move Up"
+                   , str " S - Move Down"
+                   , str " A - Move Left"
+                   , str " D - Move Right"
+                   , str " Q - Quit Game"
+                   , str "Arrow keys also work"
+                   ]
+
 -- Function to draw the game UI
 drawGame :: GameState -> Widget ()
-drawGame gs = center $ vBox [drawScore gs, border $ vBox rows]
+drawGame gs = center $ border $ vBox rows
     where
         rows = [hBox $ cellsInRow y | y <- [0..boardSize-1]]
         cellsInRow y = [cell (x, y) | x <- [0..boardSize-1]]
@@ -114,7 +129,6 @@ wallAttr = attrName "wallAttr"
 
 -- Box User, HandleEvent
 -- Stats, Wall
-
 
 
 box = hBox $ replicate 3 (str " ")
