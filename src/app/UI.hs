@@ -2,6 +2,7 @@ module UI where
 
 import Brick
 import Brick.Widgets.Border
+import Brick.Widgets.Border.Style as BS
 import Brick.Widgets.Center
 import Brick.AttrMap
 import Brick.Util
@@ -23,20 +24,25 @@ import Control.Monad.State
 
 data GameState = GameState{
     playerPos :: (Int, Int),
-    boxPos :: (Int, Int)
+    boxPos :: [(Int, Int)],
+    wallPos :: [(Int, Int)],
+    score :: Int
 }
 
 
 initialState :: GameState
 initialState = GameState{
     playerPos = (3, 3),
-    boxPos = (5, 5)
+    boxPos = [(5, 5), (4, 4), (6, 6)],
+    wallPos = [(0,0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (0, 6)],
+    score = 100
 }
 
 theMap :: AttrMap
 theMap = attrMap V.defAttr
     [ (playerAttr, fg V.green)
     , (boxAttr, fg V.red)
+    , (wallAttr, fg V.black)
     ]
 
 movePlayer :: (Int, Int) -> EventM () GameState ()
@@ -53,13 +59,17 @@ handleEvent (VtyEvent (EvKey key [])) =
         KChar 's' -> movePlayer (0, 1) 
         KChar 'a' -> movePlayer (-1,0) 
         KChar 'd' -> movePlayer (1, 0)
+        KUp       -> movePlayer (0, -1)
+        KDown     -> movePlayer (0, 1)
+        KLeft     -> movePlayer (-1, 0)
+        KRight    -> movePlayer (1, 0)
         KChar 'q' -> halt 
         _         -> return ()
 handleEvent _ = return ()
 
 
 app :: App GameState e ()
-app = App { appDraw = drawGame
+app = App { appDraw = drawUI
           , appChooseCursor = showFirstCursor 
           , appHandleEvent = handleEvent  
           , appStartEvent = pure ()
@@ -70,15 +80,28 @@ app = App { appDraw = drawGame
 boardSize :: Int
 boardSize = 10  -- Change this value to your desired board size
 
+drawUI :: GameState -> [Widget ()]
+drawUI g =  [drawGame g]
+
+
+
+drawScore :: GameState -> Widget ()
+drawScore g = withBorderStyle BS.unicode
+                $ borderWithLabel (str " Score ")
+                $ padAll 1 
+                $ hLimit 20 
+                $ str $ "Score: " ++ show (score g)
+
 -- Function to draw the game UI
-drawGame :: GameState -> [Widget ()]
-drawGame gs = [center $ border $ vBox rows]
+drawGame :: GameState -> Widget ()
+drawGame gs = center $ vBox [drawScore gs, border $ vBox rows]
     where
         rows = [hBox $ cellsInRow y | y <- [0..boardSize-1]]
         cellsInRow y = [cell (x, y) | x <- [0..boardSize-1]]
         cell pos
             | pos == playerPos gs = withAttr playerAttr $ str " P "
-            | pos == boxPos gs = withAttr boxAttr $ str " B "
+            | pos `elem` boxPos gs = withAttr boxAttr $ str " B "
+            | pos `elem` wallPos gs = withAttr wallAttr $ str " W "
             | otherwise = str "   "
 
 
@@ -86,6 +109,7 @@ drawGame gs = [center $ border $ vBox rows]
 playerAttr, boxAttr :: AttrName
 playerAttr = attrName "playerAttr"
 boxAttr = attrName "boxAttr"
+wallAttr = attrName "wallAttr"
 
 
 -- Box User, HandleEvent
