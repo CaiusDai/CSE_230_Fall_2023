@@ -47,7 +47,7 @@ import Control.Monad.State
 -- }
 
 initialState :: Game
-initialState = b1
+initialState = b2
 
 theMap :: AttrMap
 theMap = attrMap V.defAttr
@@ -139,7 +139,7 @@ drawHelp = withBorderStyle BS.unicode
 --             | otherwise = str "   "
 
 drawGame :: Game -> Widget ()
-drawGame gs = vBox rows
+drawGame gs = center $ border $ vBox rows
     where
         rows = [hBox $ cellsInRow y | y <- [0..boardSize-1]]
         cellsInRow y = [cell (V2 x y) | x <- [0..boardSize-1]]
