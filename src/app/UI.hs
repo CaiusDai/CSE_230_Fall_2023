@@ -84,9 +84,13 @@ handleEvent (VtyEvent (EvKey key [])) =
         KDown     -> movePlayer down
         KLeft     -> movePlayer left
         KRight    -> movePlayer right
+        KChar 'r' -> restartGame
         KChar 'q' -> halt 
         _         -> return ()
 handleEvent _ = return ()
+
+restartGame :: EventM () Game ()
+restartGame = put initialState
 
 
 app :: App Game e ()
