@@ -74,11 +74,12 @@ executable UI
                       vty >= 6.1,
                       mtl,
                       vty-unix,
-                      transformers,
                       containers,
+                      extra,
                       linear,
-                      lens
-
+                      lens,
+                      random,
+                      transformers
 
     -- Directories containing source files.
     hs-source-dirs:   app

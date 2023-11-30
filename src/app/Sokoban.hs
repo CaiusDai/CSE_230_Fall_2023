@@ -8,7 +8,7 @@ module Sokoban (
     getUser, getBoxes, getTargets, getWall,
     step, checkSuccess,
     up, down, left, right,
-    nextPos
+    nextPos, Game(Game), Direction
 ) where
 
 import Prelude hiding (Left, Right)
