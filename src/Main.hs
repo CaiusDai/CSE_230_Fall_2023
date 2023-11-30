@@ -2,4 +2,6 @@ module Main
   ( main
   ) where
 
-import UI (main)
+main :: IO ()
+main = do
+  putStrLn "hello world"
