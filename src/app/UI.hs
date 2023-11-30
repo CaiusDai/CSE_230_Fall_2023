@@ -105,6 +105,7 @@ drawHelp = withBorderStyle BS.unicode
                    , str " A - Move Left"
                    , str " D - Move Right"
                    , str " Q - Quit Game"
+                   , str " R - Restart Game"
                    , str "Arrow keys also work"
                    ]
 
