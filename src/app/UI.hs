@@ -57,9 +57,17 @@ handleEvent (VtyEvent (EvKey key [])) =
         KChar 's' -> movePlayer down 
         KChar 'a' -> movePlayer left 
         KChar 'd' -> movePlayer right
+        KUp       -> movePlayer up
+        KDown     -> movePlayer down
+        KLeft     -> movePlayer left
+        KRight    -> movePlayer right
+        KChar 'r' -> restartGame
         KChar 'q' -> halt 
         _         -> return ()
 handleEvent _ = return ()
+
+restartGame :: EventM () Game ()
+restartGame = put initialState
 
 
 app :: App Game e ()
@@ -105,22 +113,31 @@ drawHelp = withBorderStyle BS.unicode
                    ]
 
 drawGame :: Game -> Widget ()
-drawGame gs = center $ border $ vBox rows
-    where
-        rows = [hBox $ cellsInRow y | y <- [0..boardSize-1]]
-        cellsInRow y = [cell (V2 x y) | x <- [0..boardSize-1]]
+drawGame gs
+    | isGameSuccessful gs = drawSuccess
+    | otherwise = center $ border $ vBox rows
+  where
+    rows = [hBox $ cellsInRow y | y <- [0..boardSize-1]]
+    cellsInRow y = [cell (V2 x y) | x <- [0..boardSize-1]]
         boxPositions = toList (getBoxes gs)
         targetPositions = toList (getTargets gs)
         boxesOnTargets = [pos | (pos, onTarget) <- zip boxPositions (toList (So.checkOnTarget (getBoxes gs) (getTargets gs))), onTarget]
-        cell pos
-            | pos == getUser gs = withAttr playerAttr $ str " P "
-            | pos `elem` boxesOnTargets = withAttr boxOnTargetAttr $ str " B "  -- Green for boxes on a target
+    cell pos
+        | pos == getUser gs = withAttr playerAttr $ str " P "
+        | pos `elem` boxesOnTargets = withAttr boxOnTargetAttr $ str " B "  -- Green for boxes on a target
             | pos `elem` boxPositions = withAttr boxAttr $ str " B "  -- Red for boxes not on a target
-            | pos `elem` toList (getWall gs) = withAttr wallAttr $ str " W "
-            | pos `elem` targetPositions = withAttr targetAttr $ str " T "
-            | otherwise = str "   "
+        | pos `elem` toList (getWall gs) = withAttr wallAttr $ str " W "
+        | pos `elem` targetPositions = withAttr targetAttr $ str " T "
+        | otherwise = str "   "
 
+isGameSuccessful :: Game -> Bool
+isGameSuccessful gs =
+    getUser gs == V2 2 2
 
+drawSuccess :: Widget ()
+drawSuccess =
+    center $
+    vBox [str "Success!", str "You solved the puzzle!", str "Press 'R' to re-start.", str "Press 'Q' to quit."]
 
 
 -- Attributes for the player and the box
