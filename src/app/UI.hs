@@ -64,11 +64,14 @@ theMap = attrMap V.defAttr
 --     let newPos = (x + dx, y + dy)
 --     put $ gs {playerPos = newPos}
 
+
 movePlayer :: So.Direction -> EventM () Game ()
 movePlayer direction  = do
     gs <- get
-    let gs = step direction gs
-    put gs
+    let gs' = step direction gs
+    put gs'
+
+
 
 handleEvent:: BrickEvent () e -> EventM () Game ()
 handleEvent (VtyEvent (EvKey key [])) =
@@ -77,10 +80,6 @@ handleEvent (VtyEvent (EvKey key [])) =
         KChar 's' -> movePlayer down 
         KChar 'a' -> movePlayer left 
         KChar 'd' -> movePlayer right
-        KUp       -> movePlayer up
-        KDown     -> movePlayer down
-        KLeft     -> movePlayer left
-        KRight    -> movePlayer right
         KChar 'q' -> halt 
         _         -> return ()
 handleEvent _ = return ()
