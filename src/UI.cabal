@@ -71,7 +71,13 @@ executable UI
                       brick >=2.1.0,
                       vty >= 6.1,
                       mtl,
-                      vty-unix
+                      vty-unix,
+                      containers,
+                      extra,
+                      linear,
+                      lens,
+                      random,
+                      transformers
 
     -- Directories containing source files.
     hs-source-dirs:   app
