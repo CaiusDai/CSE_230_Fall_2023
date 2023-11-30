@@ -7,11 +7,8 @@ import Brick
 import Brick.Widgets.Border
 import Brick.Widgets.Border.Style as BS
 import Brick.Widgets.Center
-import Brick.AttrMap
-import Brick.Util
-import Brick.Widgets.Core
-import Brick
-  ( App(..), AttrMap, BrickEvent(..), EventM, Widget
+import Brick (
+    App(..), AttrMap, BrickEvent(..), EventM, Widget
   , customMain, neverShowCursor,halt
   , hLimit, vLimit, vBox, hBox
   , padRight, padLeft, padTop, padAll, Padding(..)
@@ -23,7 +20,6 @@ import Brick
 
 import Graphics.Vty.Input (Key(..), Event(..))
 import qualified Graphics.Vty as V
-import Control.Monad.State
 
 
 
@@ -119,9 +115,9 @@ drawGame gs
   where
     rows = [hBox $ cellsInRow y | y <- [0..boardSize-1]]
     cellsInRow y = [cell (V2 x y) | x <- [0..boardSize-1]]
-        boxPositions = toList (getBoxes gs)
-        targetPositions = toList (getTargets gs)
-        boxesOnTargets = [pos | (pos, onTarget) <- zip boxPositions (toList (So.checkOnTarget (getBoxes gs) (getTargets gs))), onTarget]
+    boxPositions = toList (getBoxes gs)
+    targetPositions = toList (getTargets gs)
+    boxesOnTargets = [pos | (pos, onTarget) <- zip boxPositions (toList (So.checkOnTarget (getBoxes gs) (getTargets gs))), onTarget]
     cell pos
         | pos == getUser gs = withAttr playerAttr $ str " P "
         | pos `elem` boxesOnTargets = withAttr boxOnTargetAttr $ str " B "  -- Green for boxes on a target
@@ -132,7 +128,7 @@ drawGame gs
 
 isGameSuccessful :: Game -> Bool
 isGameSuccessful gs =
-    getUser gs == V2 2 2
+    getScore gs == getNumTarget gs
 
 drawSuccess :: Widget ()
 drawSuccess =
@@ -141,13 +137,9 @@ drawSuccess =
 
 
 -- Attributes for the player and the box
-playerAttr, boxAttr :: AttrName
+playerAttr, boxAttr,wallAttr,targetAttr,boxOnTargetAttr :: AttrName
 playerAttr = attrName "playerAttr"
 boxAttr = attrName "boxAttr"
 wallAttr = attrName "wallAttr"
 targetAttr = attrName "targetAttr"
 boxOnTargetAttr = attrName "boxOnTargetAttr"
-
-
-box = hBox $ replicate 3 (str " ")
-user = str "P"
