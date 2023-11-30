@@ -25,44 +25,21 @@ import Graphics.Vty.Input (Key(..), Event(..))
 import qualified Graphics.Vty as V
 import Control.Monad.State
 
--- data Game = Game{
---     playerPos :: (Int, Int),
---     boxPos :: [(Int, Int)],
---     wallPos :: [(Int, Int)],
---     targetPos :: [(Int, Int)],
---     score :: Int
--- }
 
 
--- initialState :: Game
--- initialState = Game{
---     playerPos = (3, 3),
---     boxPos = [(5, 5), (4, 4), (6, 6)],
---     wallPos = [ (x, 0) | x <- [0..9]] ++ 
---               [ (x, 9) | x <- [0..9]] ++  
---               [ (0, y) | y <- [1..8]] ++ 
---               [ (9, y) | y <- [1..8]],     
---     targetPos = [(6, 7), (2, 3), (4, 3)],
---     score = 100
--- }
 
 initialState :: Game
 initialState = b2
 
 theMap :: AttrMap
 theMap = attrMap V.defAttr
-    [ (playerAttr, fg V.green)
-    , (boxAttr, fg V.red)
+    [ (playerAttr, fg V.cyan)
+    , (boxAttr, fg V.red)  -- For boxes not on a target
+    , (boxOnTargetAttr, fg V.green)  -- For boxes on a target
     , (wallAttr, fg V.black)
     , (targetAttr, fg V.blue)
     ]
 
--- movePlayer :: (Int, Int) -> EventM () Game ()
--- movePlayer (dx, dy)  = do
---     gs <- get
---     let (x, y) = playerPos gs
---     let newPos = (x + dx, y + dy)
---     put $ gs {playerPos = newPos}
 
 
 movePlayer :: So.Direction -> EventM () Game ()
@@ -109,7 +86,10 @@ drawScore g = withBorderStyle BS.unicode
                 $ borderWithLabel (str " Score ")
                 $ padAll 1 
                 $ hLimit 20 
-                $ str $ "Score: " ++ show (100)
+                $ str $ "Score: " ++ score ++ "/" ++ total
+                where
+                    score = show (getScore g)
+                    total = show (getNumTarget g)
 
 drawHelp :: Widget ()
 drawHelp = withBorderStyle BS.unicode
@@ -124,30 +104,23 @@ drawHelp = withBorderStyle BS.unicode
                    , str "Arrow keys also work"
                    ]
 
--- Function to draw the game UI
--- drawGame :: Game -> Widget ()
--- drawGame gs = center $ border $ vBox rows
---     where
---         rows = [hBox $ cellsInRow y | y <- [0..boardSize-1]]
---         cellsInRow y = [cell (x, y) | x <- [0..boardSize-1]]
---         cell pos
---             | pos == playerPos gs = withAttr playerAttr $ str " P "
---             | pos `elem` boxPos gs = withAttr boxAttr $ str " B "
---             | pos `elem` wallPos gs = withAttr wallAttr $ str " W "
---             | pos `elem` targetPos gs = withAttr targetAttr $ str " T "
---             | otherwise = str "   "
-
 drawGame :: Game -> Widget ()
 drawGame gs = center $ border $ vBox rows
     where
         rows = [hBox $ cellsInRow y | y <- [0..boardSize-1]]
         cellsInRow y = [cell (V2 x y) | x <- [0..boardSize-1]]
+        boxPositions = toList (getBoxes gs)
+        targetPositions = toList (getTargets gs)
+        boxesOnTargets = [pos | (pos, onTarget) <- zip boxPositions (toList (So.checkOnTarget (getBoxes gs) (getTargets gs))), onTarget]
         cell pos
             | pos == getUser gs = withAttr playerAttr $ str " P "
-            | pos `elem` toList (getBoxes gs) = withAttr boxAttr $ str " B "
+            | pos `elem` boxesOnTargets = withAttr boxOnTargetAttr $ str " B "  -- Green for boxes on a target
+            | pos `elem` boxPositions = withAttr boxAttr $ str " B "  -- Red for boxes not on a target
             | pos `elem` toList (getWall gs) = withAttr wallAttr $ str " W "
-            | pos `elem` toList (getTargets gs) = withAttr targetAttr $ str " T "
+            | pos `elem` targetPositions = withAttr targetAttr $ str " T "
             | otherwise = str "   "
+
+
 
 
 -- Attributes for the player and the box
@@ -156,9 +129,7 @@ playerAttr = attrName "playerAttr"
 boxAttr = attrName "boxAttr"
 wallAttr = attrName "wallAttr"
 targetAttr = attrName "targetAttr"
-
--- Box User, HandleEvent
--- Stats, Wall
+boxOnTargetAttr = attrName "boxOnTargetAttr"
 
 
 box = hBox $ replicate 3 (str " ")

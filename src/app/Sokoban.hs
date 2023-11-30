@@ -5,10 +5,10 @@
 module Sokoban (
     b1, b2,
     user, boxes, walls, targets,
-    getUser, getBoxes, getTargets, getWall,
+    getUser, getBoxes, getTargets, getWall,getScore, getNumTarget,
     step, checkSuccess,
     up, down, left, right,
-    nextPos, Game(Game), Direction
+    nextPos, Game(Game), Direction, checkOnTarget
 ) where
 
 import Prelude hiding (Left, Right)
@@ -17,7 +17,7 @@ import Linear.V2 (V2(..))
 import Data.Sequence (Seq(..), (<|), elemIndexL, update)
 import qualified Data.Sequence as S
 import Data.Set (fromList)
-import Data.Foldable (toList)  -- 添加这一行导入语句
+import Data.Foldable (toList,length)  -- 添加这一行导入语句
 
 data Game = Game {
     -- components
@@ -29,8 +29,10 @@ data Game = Game {
     _targets :: Seq Coord,
     -- states
     _dir     :: Direction,
-    -- _score  :: Int,
-    _dead    :: Bool
+    _score  :: Int,
+    _suceess :: Bool,
+    _dead    :: Bool,
+    _num_target:: Int
 } deriving (Show)
 
 type Coord = V2 Int
@@ -60,6 +62,7 @@ target' = V2 (xm - 1) (ym - 1)
 targets' = S.fromList [target']
 box' = V2 (xm + 1) (ym + 1)
 boxes' = S.fromList [box']
+num_targets = 1
 
 b1 :: Game
 b1 = Game
@@ -70,12 +73,15 @@ b1 = Game
         , _target  = target'
         , _targets = targets'
         , _dir     = Up
-        -- , _score  = 0
+        , _score  = 0
+        , _suceess = False
         , _dead    = False
+        , _num_target = 1
         }
 
 boxes'' =  S.fromList[V2 6 4, V2 6 6]
 targets'' = S.fromList[V2 6 3, V2 6 7]
+num_targets' = 2
 b2 :: Game
 b2 = Game
         { _user    = V2 xm ym
@@ -85,8 +91,10 @@ b2 = Game
         , _target  = target'
         , _targets = targets''
         , _dir     = Up
-        -- , _score  = 0
+        , _score  = 0
+        , _suceess = False
         , _dead    = False
+        , _num_target = num_targets'
         }
 
 findIndex :: Coord -> Seq Coord -> Maybe Int
@@ -101,6 +109,12 @@ checkSuccess  seq1 seq2 =
         set2 = fromList (toList seq2) 
     in 
         if set1 == set2 then True else False
+
+-- Given a sequence of boxes and a sequence of targets, check which boxes are on targets
+checkOnTarget :: Seq Coord -> Seq Coord -> Seq Bool
+checkOnTarget boxes targets = 
+    let targetsList = toList targets  -- Convert targets sequence to list for easy comparison
+    in S.fromList [box `elem` targetsList | box <- toList boxes]
 
 step :: Direction -> Game -> Game
 step d g =
@@ -148,6 +162,13 @@ getTargets g = g^. targets
 
 getWall :: Game -> Seq Coord 
 getWall g = g^. walls
+
+getNumTarget :: Game -> Int
+getNumTarget g = g^. num_target
+
+getScore :: Game -> Int
+getScore g = let boxesOnTargets = checkOnTarget (getBoxes g) (getTargets g)
+                in length $ filter id $ toList boxesOnTargets
 
 
 up :: Direction 
