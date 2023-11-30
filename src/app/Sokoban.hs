@@ -41,10 +41,10 @@ makeLenses ''Game
 
 -- next pos of user
 nextPos :: Direction -> Coord -> Coord
-nextPos Up    (V2 x y) = V2 (x-1) y
-nextPos Down  (V2 x y) = V2 (x+1) y
-nextPos Left  (V2 x y) = V2 x (y-1)
-nextPos Right (V2 x y) = V2 x (y+1)
+nextPos Up    (V2 x y) = V2 x (y-1)
+nextPos Down  (V2 x y) = V2 x (y+1)
+nextPos Left  (V2 x y) = V2 (x-1) y
+nextPos Right (V2 x y) = V2 (x+1) y
 nextPos _ _ = error "Error direction!"
 
 height :: Int
