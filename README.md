@@ -72,3 +72,12 @@ Currently we have identified the following crucial components of the project:
 - Collision Detection
 - Box pushing interaction
 - Game state detection (If the game has ended or not)
+
+
+## Environment setup
+
+Requirement: Have cabal installed.  
+
+To run the program, run the following command under folder src
+
+`cabal run`
