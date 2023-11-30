@@ -62,7 +62,9 @@ executable UI
 
     -- Modules included in this executable, other than Main.
     -- other-modules:
-    other-modules:    UI
+    other-modules:    UI,
+                      Sokoban
+                    
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
 
@@ -71,7 +73,12 @@ executable UI
                       brick >=2.1.0,
                       vty >= 6.1,
                       mtl,
-                      vty-unix
+                      vty-unix,
+                      transformers,
+                      containers,
+                      linear,
+                      lens
+
 
     -- Directories containing source files.
     hs-source-dirs:   app
