@@ -27,6 +27,7 @@ data Game = Game {
     _walls   :: Seq Coord,
     _target  :: Coord,
     _targets :: Seq Coord,
+    _icefloors :: Seq Coord,
     -- states
     _dir     :: Direction,
     _score  :: Int,
@@ -90,6 +91,7 @@ b2 = Game
         , _walls   = wall
         , _target  = target'
         , _targets = targets''
+        , _icefloors = S.fromList [V2 5 4, V2 5 6]
         , _dir     = Up
         , _score  = 0
         , _suceess = False
@@ -121,6 +123,11 @@ step d g =
     let nextUserPos = nextPos d (g ^. user) 
         isNextWall = findIndex nextUserPos (g ^. walls)
         isNextBox = findIndex nextUserPos (g ^. boxes)
+        moveBoxToNextPos boxPos = 
+            let nextBoxPos = nextPos d boxPos
+            in if findIndex nextBoxPos (g ^. icefloors) /= Nothing
+               then moveBoxToNextPos nextBoxPos
+               else nextBoxPos
     in
         case isNextBox of
             Nothing ->
@@ -133,7 +140,7 @@ step d g =
             Just nextBoxIndex -> -- the index of the box
                 -- handle collision with box
                 let nextBoxPos = nextUserPos
-                    nextNextBoxPos = nextPos d nextBoxPos
+                    nextNextBoxPos = moveBoxToNextPos nextBoxPos
                     isNextNextWall = findIndex nextNextBoxPos (g ^. walls)
                     isNextNextBox = findIndex nextNextBoxPos (g ^. boxes)
                     isNextNextTarget = findIndex nextNextBoxPos (g ^. targets)
