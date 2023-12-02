@@ -5,7 +5,7 @@
 module Sokoban (
     b1, b2,
     user, boxes, walls, targets,
-    getUser, getBoxes, getTargets, getWall,getScore, getNumTarget,
+    getUser, getBoxes, getTargets, getWall,getScore, getNumTarget, 
     step, checkSuccess,
     up, down, left, right,
     nextPos, Game(Game), Direction, checkOnTarget
@@ -144,7 +144,7 @@ b4 = Game
         , _score  = 0
         , _suceess = False
         , _dead    = False
-        , _num_target = 2
+        , _num_target = 3
         -- boxes update
         , _boxCat = S.fromList(["red","blue"])
         , _boxIdx = boxidx
