@@ -12,12 +12,14 @@ module Sokoban (
 ) where
 
 import Prelude hiding (Left, Right)
-import Control.Lens hiding ((<|), (|>), (:>), (:<))
+import Control.Lens hiding ((<|), (|>), (:>), (:<), holes)
 import Linear.V2 (V2(..))
 import Data.Sequence (Seq(..), (<|), elemIndexL, update)
 import qualified Data.Sequence as S
 import Data.Set (fromList)
-import Data.Foldable (toList,length)  -- 添加这一行导入语句
+import Data.Foldable (toList,length)
+import Data.Maybe (isJust)
+
 
 data Game = Game {
     -- components
@@ -27,6 +29,10 @@ data Game = Game {
     _walls   :: Seq Coord,
     _target  :: Coord,
     _targets :: Seq Coord,
+    _icefloors :: Seq Coord,
+    _fragileFloors :: Seq Coord,
+    _holes         :: Seq Coord,
+    
     -- states
     _dir     :: Direction,
     _score  :: Int,
@@ -96,6 +102,10 @@ b2 = Game
         , _walls   = wall
         , _target  = target'
         , _targets = targets''
+        , _icefloors = S.fromList [V2 5 4, V2 5 6]
+        , _fragileFloors = S.fromList [V2 7 5]
+        , _holes         = S.empty
+
         , _dir     = Up
         , _score  = 0
         , _suceess = False
@@ -127,40 +137,53 @@ checkOnTarget boxes targets =
 
 step :: Direction -> Game -> Game
 step d g =
-    let nextUserPos = nextPos d (g ^. user) 
+    let nextUserPos = nextPos d (g ^. user)
         isNextWall = findIndex nextUserPos (g ^. walls)
         isNextBox = findIndex nextUserPos (g ^. boxes)
+        isNextHole = findIndex nextUserPos (g ^. holes)
+        isNextFragile = findIndex nextUserPos (g ^. fragileFloors)
+        updateFragileAndHole pos 
+            | isJust (findIndex pos (g ^. fragileFloors)) = 
+                g & fragileFloors %~ S.filter (/= pos)
+                  & holes %~ (S.|> pos)
+            | otherwise = g
+        moveBoxToNextPos boxPos =
+            let nextBoxPos = nextPos d boxPos
+            in if findIndex nextBoxPos (g ^. icefloors) /= Nothing
+               then moveBoxToNextPos nextBoxPos
+               else nextBoxPos
     in
-        case isNextBox of
-            Nothing ->
-                case isNextWall of
-                    Nothing ->
-                        -- move
-                        g & user .~ nextUserPos --[checked]
-                          & num_steps .~ (g ^. num_steps) + 1
-                    Just _ ->
-                        g
-            Just nextBoxIndex -> -- the index of the box
-                -- handle collision with box
+        case (isNextBox, isNextWall) of
+            (Just boxIndex, _) ->
                 let nextBoxPos = nextUserPos
-                    nextNextBoxPos = nextPos d nextBoxPos
-                    isNextNextWall = findIndex nextNextBoxPos (g ^. walls)
-                    isNextNextBox = findIndex nextNextBoxPos (g ^. boxes)
-                    isNextNextTarget = findIndex nextNextBoxPos (g ^. targets)
+                    finalBoxPos = moveBoxToNextPos nextBoxPos
+                    isNextNextWall = findIndex finalBoxPos (g ^. walls)
+                    isNextNextBox = findIndex finalBoxPos (g ^. boxes)
+                    isNextNextHole = findIndex finalBoxPos (g ^. holes)
                 in
-                    case (isNextNextWall, isNextNextBox, isNextNextTarget) of
-                        (Nothing, Nothing, Nothing) ->
+                    case (isNextNextWall, isNextNextBox, isNextNextHole) of
+                        (Nothing, Nothing, Just holeIndex) ->
+                            -- Box is pushed into a hole, remove the box and the hole
+                            g & boxes .~ S.deleteAt boxIndex (g ^. boxes)
+                              & holes .~ S.deleteAt holeIndex (g ^. holes)
+                        (Nothing, Nothing, _) ->
                             -- move user, move box
-                            g & user .~ nextUserPos
-                              & boxes .~ (update nextBoxIndex nextNextBoxPos (g ^. boxes))
-                              & num_steps .~ (g ^. num_steps) + 1
-                        (_, _, Just _) ->
-                            -- move to target -> modify total
-                            g & user .~ nextUserPos
-                              & boxes .~ (update nextBoxIndex nextNextBoxPos (g ^. boxes))
-                              & num_steps .~ (g ^. num_steps) + 1
-                        (_, _, _) ->
-                            g
+                            updateFragileAndHole nextUserPos
+                            & user .~ nextUserPos
+                            & boxes .~ (update boxIndex finalBoxPos (g ^. boxes))
+                        _ -> g
+            (Nothing, _) ->
+                case isNextHole of
+                    Just _ ->
+                        -- User steps into a hole
+                        updateFragileAndHole nextUserPos
+                        & user .~ nextUserPos
+                        & dead .~ True
+                    Nothing ->
+                        -- Normal movement
+                        let g' = updateFragileAndHole nextUserPos
+                        in g' & user .~ nextUserPos
+            _ -> g
 
 -- check 
 getUser :: Game -> Coord
