@@ -8,6 +8,7 @@ import Brick.Widgets.Border
 import Brick.Widgets.Border.Style as BS
 import Brick.Widgets.Center
 import Brick.BChan(BChan, writeBChan)
+import Brick.Widgets.Core ((<+>), (<=>), vBox, hBox)
 import Brick.Types()
 import Brick (
     App(..), AttrMap, BrickEvent(..), EventM, Widget
@@ -50,16 +51,16 @@ startTicking delay channel = forkIO $ forever $ do
 
 -- Unicode related definitions
 userFigure :: String
-userFigure = "🏃"
+userFigure = " 🏃"
 
 boxFigure :: String
-boxFigure = "▣"
+boxFigure = " ▣ "
 
 targetFigure :: String
-targetFigure = "⚑"
+targetFigure = " ⚑ "
 
 wallFigure :: String
-wallFigure = "🧱"
+wallFigure = " 🧱"
 
 wallSpaceCost :: Int
 wallSpaceCost = 2
@@ -79,15 +80,44 @@ app = App { appDraw = drawUI
           , appAttrMap = const theMap   -- Empty for now
           }
 
+-- createBorderOverlay :: Int -> Int -> Widget ()
+-- createBorderOverlay w h = 
+--     withBorderStyle unicodeBold $ 
+--     center $ 
+--     hLimit h $ 
+--     vLimit w $ 
+--     border $ 
+--     str " dsafaf " 
 
--- App required functions
+
+createCustomBorder :: Widget n -> Widget n
+createCustomBorder widgetInside = 
+    withBorderStyle unicodeRounded $  
+    borderWithLabel (str "Custom Border") $ 
+    widgetInside
+
+-- Function to create the main game UI
+drawGameUI :: Game -> Widget ()
+drawGameUI g = center 
+                    $ hLimit 80 $ vLimit 30
+                    $ hBox [padRight (Pad 2) (drawScore g), drawGame g]
+                
+-- drawUI :: Game -> [Widget ()]
+-- drawUI g = 
+--     if getMenuStatus g
+--     then drawMainMenu g
+--     else let gameUI = drawGameUI g
+--              customBorderedGameUI = createCustomBorder gameUI
+--          in [customBorderedGameUI]
+
+
+-- -- App required functions
 drawUI :: Game -> [Widget ()]
 drawUI g = if getMenuStatus g
            then drawMainMenu g
-           else [center $ withBorderStyle BS.unicode
-                    $ borderWithLabel (str " Sokoban Game ")
+           else [center 
                     $ hLimit 80 $ vLimit 30
-                    $ hBox [padRight (Pad 2) (drawScore g), drawGame g, padLeft (Pad 2) drawHelp]]
+                    $ hBox [padRight (Pad 2) (drawScore g), drawGame g]]
 
 drawMainMenu :: Game -> [Widget n]
 drawMainMenu gs = [ vBox [ drawTitle
@@ -146,7 +176,7 @@ drawHelp = withBorderStyle BS.unicode
 drawGame :: Game -> Widget ()
 drawGame gs
     | isGameSuccessful gs = drawSuccess 
-    | otherwise = center $ border $ vBox rows
+    | otherwise = center  $ vBox rows
   where
     rows = [hBox $ cellsInRow y | y <- [0..boardSize-1]]
     cellsInRow y = [cell (V2 x y) | x <- [0..boardSize-1]]
@@ -154,11 +184,11 @@ drawGame gs
     targetPositions = toList (getTargets gs)
     boxesOnTargets = [pos | (pos, onTarget) <- zip boxPositions (toList (So.checkOnTarget (getBoxes gs) (getTargets gs))), onTarget]
     cell pos
-        | pos == getUser gs = withAttr playerAttr $ str " P "
-        | pos `elem` boxesOnTargets = withAttr boxOnTargetAttr $ str " B "  -- Green for boxes on a target
-        | pos `elem` boxPositions = withAttr boxAttr $ str " B "  -- Red for boxes not on a target
-        | pos `elem` toList (getWall gs) = withAttr wallAttr $ str " W "
-        | pos `elem` targetPositions = withAttr targetAttr $ str " T "
+        | pos == getUser gs = withAttr playerAttr $ str userFigure
+        | pos `elem` boxesOnTargets = withAttr boxOnTargetAttr $ str boxFigure  -- Green for boxes on a target
+        | pos `elem` boxPositions = withAttr boxAttr $ str boxFigure  -- Red for boxes not on a target
+        | pos `elem` toList (getWall gs) = withAttr wallAttr $ str wallFigure
+        | pos `elem` targetPositions = withAttr targetAttr $ str targetFigure
         | otherwise = str $ replicate 3 ' '
 
 isGameSuccessful :: Game -> Bool
