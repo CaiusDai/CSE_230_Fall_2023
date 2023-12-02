@@ -32,6 +32,7 @@ data Game = Game {
     _icefloors :: Seq Coord,
     _fragileFloors :: Seq Coord,
     _holes         :: Seq Coord,
+    
     -- states
     _dir     :: Direction,
     _score  :: Int,
@@ -98,6 +99,7 @@ b2 = Game
         , _icefloors = S.fromList [V2 5 4, V2 5 6]
         , _fragileFloors = S.fromList [V2 7 5]
         , _holes         = S.empty
+
         , _dir     = Up
         , _score  = 0
         , _suceess = False
