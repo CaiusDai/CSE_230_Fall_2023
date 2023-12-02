@@ -164,33 +164,34 @@ step d g =
                then moveBoxToNextPos nextBoxPos
                else nextBoxPos
     in
-        case (isNextBox, isNextWall) of
-            (Just boxIndex, _) ->
-                let nextBoxPos = nextUserPos
-                    finalBoxPos = moveBoxToNextPos nextBoxPos
-                    isNextNextWall = findIndex finalBoxPos (g ^. walls)
-                    isNextNextBox = findIndex finalBoxPos (g ^. boxes)
-                    isNextNextHole = findIndex finalBoxPos (g ^. holes)
-                in
-                    case (isNextNextWall, isNextNextBox, isNextNextHole) of
-                        (Nothing, Nothing, Just holeIndex) ->
-                            -- Box is pushed into a hole, remove the box and the hole
-                            g & boxes .~ S.deleteAt boxIndex (g ^. boxes)
-                              & holes .~ S.deleteAt holeIndex (g ^. holes)
-                        (Nothing, Nothing, _) ->
-                            -- move user, move box
-                            updateFragileAndHole nextUserPos
-                            & user .~ nextUserPos
-                            & boxes .~ (update boxIndex finalBoxPos (g ^. boxes))
-                        _ -> g
-            (Nothing, _) ->
-                case isNextHole of
-                    Just _ ->
+        case isNextWall of
+            Just _ -> g -- User cannot move into a wall
+            Nothing ->
+                case (isNextBox, isNextHole) of
+                    (Just boxIndex, _) ->
+                        let nextBoxPos = nextUserPos
+                            finalBoxPos = moveBoxToNextPos nextBoxPos
+                            isNextNextWall = findIndex finalBoxPos (g ^. walls)
+                            isNextNextBox = findIndex finalBoxPos (g ^. boxes)
+                            isNextNextHole = findIndex finalBoxPos (g ^. holes)
+                        in
+                            case (isNextNextWall, isNextNextBox, isNextNextHole) of
+                                (Nothing, Nothing, Just holeIndex) ->
+                                    -- Box is pushed into a hole, remove the box and the hole
+                                    g & boxes .~ S.deleteAt boxIndex (g ^. boxes)
+                                      & holes .~ S.deleteAt holeIndex (g ^. holes)
+                                (Nothing, Nothing, _) ->
+                                    -- move user, move box
+                                    updateFragileAndHole nextUserPos
+                                    & user .~ nextUserPos
+                                    & boxes .~ (update boxIndex finalBoxPos (g ^. boxes))
+                                _ -> g -- Movement blocked by a wall or another box
+                    (Nothing, Just _) ->
                         -- User steps into a hole
                         updateFragileAndHole nextUserPos
                         & user .~ nextUserPos
                         & dead .~ True
-                    Nothing ->
+                    (Nothing, _) ->
                         -- Normal movement
                         let g' = updateFragileAndHole nextUserPos
                         in g' & user .~ nextUserPos
