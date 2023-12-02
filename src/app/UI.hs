@@ -7,6 +7,8 @@ import Brick
 import Brick.Widgets.Border
 import Brick.Widgets.Border.Style as BS
 import Brick.Widgets.Center
+import Brick.BChan(BChan, writeBChan)
+import Brick.Types()
 import Brick (
     App(..), AttrMap, BrickEvent(..), EventM, Widget
   , customMain, neverShowCursor,halt
@@ -20,12 +22,126 @@ import Brick (
 
 import Graphics.Vty.Input (Key(..), Event(..))
 import qualified Graphics.Vty as V
+import Control.Concurrent (forkIO, threadDelay)
+import Control.Monad (forever)
+import Text.Printf (printf)
+import GHC.Conc.Sync (ThreadId)
 
+-- Some type definitions and helper data
+-- Attributes for the player and the box
+playerAttr, boxAttr,wallAttr,targetAttr,boxOnTargetAttr :: AttrName
+playerAttr = attrName "playerAttr"
+boxAttr = attrName "boxAttr"
+wallAttr = attrName "wallAttr"
+targetAttr = attrName "targetAttr"
+boxOnTargetAttr = attrName "boxOnTargetAttr"
 
+-- Timer related definitions
+data TimerEvent = Tick
+startTicking :: Int -> BChan TimerEvent -> IO GHC.Conc.Sync.ThreadId
+startTicking delay channel = forkIO $ forever $ do
+    threadDelay delay -- delay is in microseconds
+    writeBChan channel Tick
 
+-- Unicode related definitions
+userFigure :: String
+userFigure = "🏃"
+
+boxFigure :: String
+boxFigure = "▣"
+
+targetFigure :: String
+targetFigure = "⚑"
+
+wallFigure :: String
+wallFigure = "🧱"
+
+wallSpaceCost :: Int
+wallSpaceCost = 2
 
 initialState :: Game
 initialState = b2
+
+
+
+
+-- App: Entry of UI
+app :: App Game TimerEvent ()
+app = App { appDraw = drawUI
+          , appChooseCursor = showFirstCursor 
+          , appHandleEvent = handleEvent  
+          , appStartEvent = pure ()
+          , appAttrMap = const theMap   -- Empty for now
+          }
+
+
+-- App required functions
+drawUI :: Game -> [Widget ()]
+drawUI g = [center $ withBorderStyle BS.unicode
+            $ borderWithLabel (str " Sokoban Game ")
+            $ hLimit 80 $ vLimit 30
+            $ hBox [padRight (Pad 2) (drawScore g), drawGame g, padLeft (Pad 2) drawHelp]]
+
+drawScore :: Game -> Widget ()
+drawScore g = withBorderStyle BS.unicode
+                $ border
+                $ padAll 2
+                $ hLimit 20 
+                $ vBox [ str "Score: " <+> str score <+> str "/" <+> str total
+                       , str "Steps: " <+> str steps
+                       , str $ formatTime $ getTimer g
+                       ]
+                where
+                    score = show (getScore g)
+                    total = show (getNumTarget g)
+                    steps = show (getSteps g)
+
+formatTime :: Int -> String
+formatTime totalSeconds = printf "%02d:%02d" minutes seconds
+  where
+    (minutes, seconds) = totalSeconds `divMod` 60
+
+drawHelp :: Widget ()
+drawHelp = withBorderStyle BS.unicode
+            $ borderWithLabel (str " Help ")
+            $ padAll 2
+            $ vBox [ str "Controls:"
+                   , str " W - Move Up"
+                   , str " S - Move Down"
+                   , str " A - Move Left"
+                   , str " D - Move Right"
+                   , str " Q - Quit Game"
+                   , str " R - Restart Game"
+                   , str "Arrow keys also work"
+                   ]
+
+drawGame :: Game -> Widget ()
+drawGame gs
+    | isGameSuccessful gs = drawSuccess 
+    | otherwise = center $ border $ vBox rows
+  where
+    rows = [hBox $ cellsInRow y | y <- [0..boardSize-1]]
+    cellsInRow y = [cell (V2 x y) | x <- [0..boardSize-1]]
+    boxPositions = toList (getBoxes gs)
+    targetPositions = toList (getTargets gs)
+    boxesOnTargets = [pos | (pos, onTarget) <- zip boxPositions (toList (So.checkOnTarget (getBoxes gs) (getTargets gs))), onTarget]
+    cell pos
+        | pos == getUser gs = withAttr playerAttr $ str " P "
+        | pos `elem` boxesOnTargets = withAttr boxOnTargetAttr $ str " B "  -- Green for boxes on a target
+        | pos `elem` boxPositions = withAttr boxAttr $ str " B "  -- Red for boxes not on a target
+        | pos `elem` toList (getWall gs) = withAttr wallAttr $ str " W "
+        | pos `elem` targetPositions = withAttr targetAttr $ str " T "
+        | otherwise = str $ replicate 3 ' '
+
+isGameSuccessful :: Game -> Bool
+isGameSuccessful gs =
+    getScore gs == getNumTarget gs
+
+drawSuccess :: Widget ()
+drawSuccess =
+    center $
+    vBox [str "Success!", str "You solved the puzzle!", str "Press 'R' to re-start.", str "Press 'Q' to quit."]
+
 
 theMap :: AttrMap
 theMap = attrMap V.defAttr
@@ -36,17 +152,14 @@ theMap = attrMap V.defAttr
     , (targetAttr, fg V.blue)
     ]
 
-
-
-movePlayer :: So.Direction -> EventM () Game ()
-movePlayer direction  = do
+handleEvent :: BrickEvent () TimerEvent -> EventM () Game ()
+-- Handle Timer Events
+handleEvent (AppEvent Tick) = do
     gs <- get
-    let gs' = step direction gs
+    let gs' = updateTimer gs
     put gs'
 
-
-
-handleEvent :: BrickEvent () e -> EventM () Game ()
+-- Handle Key press Events
 handleEvent (VtyEvent (EvKey key [])) = do
     gs <- get
     if isGameSuccessful gs
@@ -68,86 +181,26 @@ handleEvent (VtyEvent (EvKey key [])) = do
             _         -> return ()
 handleEvent _ = return ()
 
+movePlayer :: So.Direction -> EventM () Game ()
+movePlayer direction  = do
+    gs <- get
+    let gs' = step direction gs
+    if isGameSuccessful gs' 
+    then put $ haltTimer gs'
+    else put gs'
 
 restartGame :: EventM () Game ()
 restartGame = put initialState
 
 
-app :: App Game e ()
-app = App { appDraw = drawUI
-          , appChooseCursor = showFirstCursor 
-          , appHandleEvent = handleEvent  
-          , appStartEvent = pure ()
-          , appAttrMap = const theMap   -- Empty for now
-          }
-
 -- Constants for the game board size and positions
 boardSize :: Int
 boardSize = 10  -- Change this value to your desired board size
 
-drawUI :: Game -> [Widget ()]
-drawUI g = [center $ withBorderStyle BS.unicode
-            $ borderWithLabel (str " Sokoban Game ")
-            $ hLimit 80 $ vLimit 30
-            $ hBox [padRight (Pad 2) (drawScore g), drawGame g, padLeft (Pad 2) drawHelp]]
 
 
-drawScore :: Game -> Widget ()
-drawScore g = withBorderStyle BS.unicode
-                $ borderWithLabel (str " Score ")
-                $ padAll 1 
-                $ hLimit 20 
-                $ str $ "Score: " ++ score ++ "/" ++ total
-                where
-                    score = show (getScore g)
-                    total = show (getNumTarget g)
-
-drawHelp :: Widget ()
-drawHelp = withBorderStyle BS.unicode
-            $ borderWithLabel (str " Help ")
-            $ padAll 1
-            $ vBox [ str "Controls:"
-                   , str " W - Move Up"
-                   , str " S - Move Down"
-                   , str " A - Move Left"
-                   , str " D - Move Right"
-                   , str " Q - Quit Game"
-                   , str " R - Restart Game"
-                   , str "Arrow keys also work"
-                   ]
-
-drawGame :: Game -> Widget ()
-drawGame gs
-    | isGameSuccessful gs = drawSuccess
-    | otherwise = center $ border $ vBox rows
-  where
-    rows = [hBox $ cellsInRow y | y <- [0..boardSize-1]]
-    cellsInRow y = [cell (V2 x y) | x <- [0..boardSize-1]]
-    boxPositions = toList (getBoxes gs)
-    targetPositions = toList (getTargets gs)
-    boxesOnTargets = [pos | (pos, onTarget) <- zip boxPositions (toList (So.checkOnTarget (getBoxes gs) (getTargets gs))), onTarget]
-    cell pos
-        | pos == getUser gs = withAttr playerAttr $ str " P "
-        | pos `elem` boxesOnTargets = withAttr boxOnTargetAttr $ str " B "  -- Green for boxes on a target
-        | pos `elem` boxPositions = withAttr boxAttr $ str " B "  -- Red for boxes not on a target
-        | pos `elem` toList (getWall gs) = withAttr wallAttr $ str " W "
-        | pos `elem` targetPositions = withAttr targetAttr $ str " T "
-        | otherwise = str "   "
-
-isGameSuccessful :: Game -> Bool
-isGameSuccessful gs =
-    getScore gs == getNumTarget gs
-
-drawSuccess :: Widget ()
-drawSuccess =
-    center $
-    vBox [str "Success!", str "You solved the puzzle!", str "Press 'R' to re-start.", str "Press 'Q' to quit."]
 
 
--- Attributes for the player and the box
-playerAttr, boxAttr,wallAttr,targetAttr,boxOnTargetAttr :: AttrName
-playerAttr = attrName "playerAttr"
-boxAttr = attrName "boxAttr"
-wallAttr = attrName "wallAttr"
-targetAttr = attrName "targetAttr"
-boxOnTargetAttr = attrName "boxOnTargetAttr"
+
+
+

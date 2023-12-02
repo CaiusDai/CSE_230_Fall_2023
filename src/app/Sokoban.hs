@@ -5,8 +5,8 @@
 module Sokoban (
     b1, b2,
     user, boxes, walls, targets,
-    getUser, getBoxes, getTargets, getWall,getScore, getNumTarget,
-    step, checkSuccess,
+    getUser, getBoxes, getTargets, getWall,getScore, getNumTarget,getSteps,getTimer,updateTimer,
+    step, checkSuccess,haltTimer,
     up, down, left, right,
     nextPos, Game(Game), Direction, checkOnTarget
 ) where
@@ -32,7 +32,10 @@ data Game = Game {
     _score  :: Int,
     _suceess :: Bool,
     _dead    :: Bool,
-    _num_target:: Int
+    _num_target:: Int,
+    _num_steps:: Int,
+    _timer_seconds   :: Int,
+    _timer_running   :: Bool
 } deriving (Show)
 
 type Coord = V2 Int
@@ -77,6 +80,9 @@ b1 = Game
         , _suceess = False
         , _dead    = False
         , _num_target = 1
+        , _num_steps = 0
+        , _timer_seconds = 0
+        , _timer_running = True
         }
 
 boxes'' =  S.fromList[V2 6 4, V2 6 6]
@@ -95,6 +101,9 @@ b2 = Game
         , _suceess = False
         , _dead    = False
         , _num_target = num_targets'
+        , _num_steps = 0
+        , _timer_seconds = 0
+        , _timer_running = True
         }
 
 findIndex :: Coord -> Seq Coord -> Maybe Int
@@ -128,6 +137,7 @@ step d g =
                     Nothing ->
                         -- move
                         g & user .~ nextUserPos --[checked]
+                          & num_steps .~ (g ^. num_steps) + 1
                     Just _ ->
                         g
             Just nextBoxIndex -> -- the index of the box
@@ -143,10 +153,12 @@ step d g =
                             -- move user, move box
                             g & user .~ nextUserPos
                               & boxes .~ (update nextBoxIndex nextNextBoxPos (g ^. boxes))
+                              & num_steps .~ (g ^. num_steps) + 1
                         (_, _, Just _) ->
                             -- move to target -> modify total
                             g & user .~ nextUserPos
                               & boxes .~ (update nextBoxIndex nextNextBoxPos (g ^. boxes))
+                              & num_steps .~ (g ^. num_steps) + 1
                         (_, _, _) ->
                             g
 
@@ -170,6 +182,19 @@ getScore :: Game -> Int
 getScore g = let boxesOnTargets = checkOnTarget (getBoxes g) (getTargets g)
                 in length $ filter id $ toList boxesOnTargets
 
+getSteps :: Game -> Int
+getSteps g = g^. num_steps
+
+getTimer :: Game -> Int
+getTimer g = g^. timer_seconds
+
+updateTimer :: Game -> Game
+updateTimer g = if g ^. timer_running 
+                then g & timer_seconds .~ (g ^. timer_seconds + 1)
+                else g
+
+haltTimer :: Game -> Game
+haltTimer g = g & timer_running .~ False
 
 up :: Direction 
 up = Up 
