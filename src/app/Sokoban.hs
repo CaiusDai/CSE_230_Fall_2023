@@ -3,7 +3,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Sokoban (
-    b1, b2, b4,
+    b1, b2, b3,
     user, boxes, walls, targets,
     getUser, getBoxes, getTargets, getWall,getScore, getNumTarget, 
     step, checkSuccess,
@@ -127,17 +127,19 @@ blueidx = S.fromList [1, 2]
 empty = M.empty
 boxidx = M.insert "red" redidx . M.insert "blue" blueidx $ empty
 
-targets3 = S.fromList[V2 3 5, V2 6 3, V2 6 7]
 idx3 = S.fromList([0,1,2])
-b4 :: Game
-b4 = Game
+b3 :: Game
+b3 = Game
         { _user    = V2 xm ym
         , _box     = box'
         , _boxes   = S.fromList[V2 4 5, V2 6 4, V2 6 6, V2 6 2, V2 5 7]
+        -- ,_boxes   = S.fromList[V2 6 6, V2 4 6, V2 5 6, V2 2 3, V2 3 3, V2 4 3]
         , _walls   = wall
         , _target  = target'
-        , _targets = targets3
-        , _icefloors = S.fromList [V2 5 4, V2 5 6]
+        , _targets = S.fromList[V2 3 5, V2 6 3, V2 6 7]
+        -- , _targets = S.fromList[V2 6 6, V2 4 6, V2 5 6]
+        -- ,_targets = S.fromList[V2 2 3, V2 3 3, V2 4 3]
+        , _icefloors = S.fromList [V2 5 4, V2 5 8]
         , _fragileFloors = S.fromList [V2 7 5]
         , _holes         = S.empty
         , _dir     = Up
