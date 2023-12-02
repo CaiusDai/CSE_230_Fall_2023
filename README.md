@@ -112,6 +112,8 @@ Currently we divided the UI and game logic into two parts, while file **src/app/
 Up to the basic game version, we haven't met any serious challenge. The challenges we list below are the ones that we are facing for the advanced version of the game.
 
 - Fancier UI. We are currently trying to introduce image and Unicode characters into the UI, and the challenge is that this will cause inconsistent rendering effect due to the various spacing cost for Unicode and image. We are trying to solve this problem by dynamicly adjust the space padding based on the position of different characters.
+- In addition to this, we have encountered some obstacles on the backend. We originally planned to incorporate a solver into the Sokoban game to determine whether a map is solvable. This feature would have allowed us to add many functionalities, such as challenges with a limited number of moves or random map generation. However, we encountered issues in implementing this feature. Our initial plan was to use the Breadth-First Search (BFS) algorithm, but we found it unfeasible in practice. The maps may contain multiple boxes, which can collide with each other, effectively making them movable obstacles. This significantly increases the complexity of the problem. We are currently still searching for a solution to this issue.
+
 
 ### Future Plan
 
