@@ -36,6 +36,11 @@ wallAttr = attrName "wallAttr"
 targetAttr = attrName "targetAttr"
 boxOnTargetAttr = attrName "boxOnTargetAttr"
 
+titleAttr, selectedAttr, normalAttr :: AttrName
+titleAttr = attrName "title"
+selectedAttr = attrName "selected"
+normalAttr = attrName "normal"
+
 -- Timer related definitions
 data TimerEvent = Tick
 startTicking :: Int -> BChan TimerEvent -> IO GHC.Conc.Sync.ThreadId
@@ -77,10 +82,33 @@ app = App { appDraw = drawUI
 
 -- App required functions
 drawUI :: Game -> [Widget ()]
-drawUI g = [center $ withBorderStyle BS.unicode
-            $ borderWithLabel (str " Sokoban Game ")
-            $ hLimit 80 $ vLimit 30
-            $ hBox [padRight (Pad 2) (drawScore g), drawGame g, padLeft (Pad 2) drawHelp]]
+drawUI g = if getMenuStatus g
+           then drawMainMenu g
+           else [center $ withBorderStyle BS.unicode
+                    $ borderWithLabel (str " Sokoban Game ")
+                    $ hLimit 80 $ vLimit 30
+                    $ hBox [padRight (Pad 2) (drawScore g), drawGame g, padLeft (Pad 2) drawHelp]]
+
+drawMainMenu :: Game -> [Widget n]
+drawMainMenu gs = [ vBox [ drawTitle
+                              , padTop (Pad 2) $ drawGameMode $ getGameMode gs
+                              ]]
+
+drawTitle :: Widget n
+drawTitle = withAttr titleAttr $ center $ str "Sokoban Game"
+
+drawGameMode :: GameMode -> Widget n
+drawGameMode gm = center $ vBox $ map (uncurry drawModeOption) options
+  where
+    options = [(Single, "Single Player"), (Multi, "Multiplayer")]
+    isSelected Single = gm == Single
+    isSelected Multi = gm == Multi
+    drawModeOption mode label = selectable (isSelected mode) $ str label
+
+selectable :: Bool -> Widget n -> Widget n
+selectable True  = withAttr selectedAttr . hCenter
+selectable False = withAttr normalAttr . hCenter
+
 
 drawScore :: Game -> Widget ()
 drawScore g = withBorderStyle BS.unicode
@@ -150,6 +178,9 @@ theMap = attrMap V.defAttr
     , (boxOnTargetAttr, fg V.green)  -- For boxes on a target
     , (wallAttr, fg V.black)
     , (targetAttr, fg V.blue)
+    , (titleAttr, fg V.cyan `V.withStyle` V.bold)
+    , (selectedAttr, fg V.green `V.withStyle` V.bold)
+    , (normalAttr, fg V.white)
     ]
 
 handleEvent :: BrickEvent () TimerEvent -> EventM () Game ()
@@ -162,7 +193,13 @@ handleEvent (AppEvent Tick) = do
 -- Handle Key press Events
 handleEvent (VtyEvent (EvKey key [])) = do
     gs <- get
-    if isGameSuccessful gs
+    if getMenuStatus gs
+    then case key of
+        KChar 'w' -> put $ updateGameMode gs Single
+        KChar 's' -> put $ updateGameMode gs Multi
+        KEnter    -> put $ startTimer $ updateMenuStatus gs False
+        _         -> return ()
+    else if isGameSuccessful gs
         then case key of
             KChar 'r' -> restartGame
             KChar 'q' -> halt

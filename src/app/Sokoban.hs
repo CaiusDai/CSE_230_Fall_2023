@@ -6,9 +6,10 @@ module Sokoban (
     b1, b2,
     user, boxes, walls, targets,
     getUser, getBoxes, getTargets, getWall,getScore, getNumTarget,getSteps,getTimer,updateTimer,
-    step, checkSuccess,haltTimer,
+    getMenuStatus, updateMenuStatus, getGameMode,updateGameMode,
+    step, checkSuccess,haltTimer,startTimer,
     up, down, left, right,
-    nextPos, Game(Game), Direction, checkOnTarget
+    nextPos, Game(Game), Direction, checkOnTarget,GameMode(Single,Multi)
 ) where
 
 import Prelude hiding (Left, Right)
@@ -41,8 +42,14 @@ data Game = Game {
     _num_target:: Int,
     _num_steps:: Int,
     _timer_seconds   :: Int,
-    _timer_running   :: Bool
+    _timer_running   :: Bool,
+
+    -- menu related
+    _in_menu :: Bool,
+    _game_mode :: GameMode
 } deriving (Show)
+
+data GameMode = Single | Multi deriving (Show,Eq)
 
 type Coord = V2 Int
 
@@ -88,7 +95,9 @@ b1 = Game
         , _num_target = 1
         , _num_steps = 0
         , _timer_seconds = 0
-        , _timer_running = True
+        , _timer_running = False
+        , _in_menu = True
+        , _game_mode = Single
         }
 
 boxes'' =  S.fromList[V2 6 4, V2 6 6]
@@ -113,7 +122,9 @@ b2 = Game
         , _num_target = num_targets'
         , _num_steps = 0
         , _timer_seconds = 0
-        , _timer_running = True
+        , _timer_running = False
+        , _in_menu = True
+        , _game_mode = Single
         }
 
 findIndex :: Coord -> Seq Coord -> Maybe Int
@@ -185,7 +196,7 @@ step d g =
                         in g' & user .~ nextUserPos
             _ -> g
 
--- check 
+-- Getters and Setters
 getUser :: Game -> Coord
 getUser g = g^.user
 
@@ -211,6 +222,18 @@ getSteps g = g^. num_steps
 getTimer :: Game -> Int
 getTimer g = g^. timer_seconds
 
+getMenuStatus :: Game -> Bool
+getMenuStatus g = g^. in_menu
+
+updateMenuStatus :: Game -> Bool -> Game
+updateMenuStatus g status = g & in_menu .~ status
+
+getGameMode :: Game -> GameMode
+getGameMode g = g^. game_mode
+
+updateGameMode :: Game -> GameMode -> Game
+updateGameMode g mode = g & game_mode .~ mode
+
 updateTimer :: Game -> Game
 updateTimer g = if g ^. timer_running 
                 then g & timer_seconds .~ (g ^. timer_seconds + 1)
@@ -219,6 +242,8 @@ updateTimer g = if g ^. timer_running
 haltTimer :: Game -> Game
 haltTimer g = g & timer_running .~ False
 
+startTimer :: Game -> Game
+startTimer g = g & timer_running .~ True
 up :: Direction 
 up = Up 
 
