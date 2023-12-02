@@ -3,7 +3,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Sokoban (
-    b1, b2,
+    b1, b2, b4,
     user, boxes, walls, targets,
     getUser, getBoxes, getTargets, getWall,getScore, getNumTarget, 
     step, checkSuccess,
