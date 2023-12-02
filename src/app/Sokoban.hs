@@ -122,13 +122,12 @@ b2 = Game
 
 
 boxidx :: IndexMap
-badidx = S.fromList [3, 4]
 redidx = S.fromList [0]
 blueidx = S.fromList [1, 2]
 empty = M.empty
-boxidx = M.insert "red" redidx . M.insert "blue" blueidx . M.insert "bad" badidx $ empty
+boxidx = M.insert "red" redidx . M.insert "blue" blueidx $ empty
 
-targets3 = S.fromList[V2 5 3, V2 6 3, V2 6 7]
+targets3 = S.fromList[V2 3 5, V2 6 3, V2 6 7]
 idx3 = S.fromList([0,1,2])
 b4 :: Game
 b4 = Game
@@ -147,23 +146,41 @@ b4 = Game
         , _dead    = False
         , _num_target = 2
         -- boxes update
-        , _boxCat = S.fromList(["red","blue","bad"])
+        , _boxCat = S.fromList(["red","blue"])
         , _boxIdx = boxidx
         }
 
 
 findIndex :: Coord -> Seq Coord -> Maybe Int
-findIndex element seq = elemIndexL element seq
+findIndex = elemIndexL 
 
 moveBox :: Int -> Coord -> Seq Coord -> Seq Coord
-moveBox index newValue seq = (update index newValue seq)
+moveBox  = update
 
-checkSuccess :: Seq Coord -> Seq Coord -> Bool 
-checkSuccess  seq1 seq2 = 
+
+indices2Seq :: Seq Int -> Seq Coord -> Seq Coord
+indices2Seq indices seq = S.fromList [seq `S.index` idx | idx <- toList indices]
+
+checkCondition :: Seq Coord -> Seq Coord -> Bool 
+checkCondition  seq1 seq2 = 
     let set1 = fromList (toList seq1)
         set2 = fromList (toList seq2) 
     in 
         if set1 == set2 then True else False
+
+
+checkSuccess :: Game -> Bool
+checkSuccess g = checkHelper (M.toList (g^. boxIdx))
+  where
+    checkHelper [] = True  
+    checkHelper ((key, indices):rest) =
+      let targetSeq = indices2Seq indices (g^.targets)
+          boxesSeq = indices2Seq indices (g^.boxes)
+      in 
+        if not (checkCondition targetSeq boxesSeq)
+            then False  
+            else checkHelper rest 
+
 
 -- Given a sequence of boxes and a sequence of targets, check which boxes are on targets
 checkOnTarget :: Seq Coord -> Seq Coord -> Seq Bool
