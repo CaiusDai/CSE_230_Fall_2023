@@ -8,7 +8,6 @@ import Brick.Widgets.Border
 import Brick.Widgets.Border.Style as BS
 import Brick.Widgets.Center
 import Brick.BChan(BChan, writeBChan)
-import Brick.Widgets.Core ((<+>), (<=>), vBox, hBox)
 import Brick.Types()
 import Brick (
     App(..), AttrMap, BrickEvent(..), EventM, Widget
@@ -62,8 +61,12 @@ targetFigure = " ⚑ "
 wallFigure :: String
 wallFigure = " 🧱"
 
+holeFigure :: String
+holeFigure = " 🕳️"
+
 wallSpaceCost :: Int
 wallSpaceCost = 2
+
 
 initialState :: Game
 initialState = b2
@@ -80,42 +83,14 @@ app = App { appDraw = drawUI
           , appAttrMap = const theMap   -- Empty for now
           }
 
--- createBorderOverlay :: Int -> Int -> Widget ()
--- createBorderOverlay w h = 
---     withBorderStyle unicodeBold $ 
---     center $ 
---     hLimit h $ 
---     vLimit w $ 
---     border $ 
---     str " dsafaf " 
-
-
-createCustomBorder :: Widget n -> Widget n
-createCustomBorder widgetInside = 
-    withBorderStyle unicodeRounded $  
-    borderWithLabel (str "Custom Border") $ 
-    widgetInside
-
--- Function to create the main game UI
-drawGameUI :: Game -> Widget ()
-drawGameUI g = center 
-                    $ hLimit 80 $ vLimit 30
-                    $ hBox [padRight (Pad 2) (drawScore g), drawGame g]
-                
--- drawUI :: Game -> [Widget ()]
--- drawUI g = 
---     if getMenuStatus g
---     then drawMainMenu g
---     else let gameUI = drawGameUI g
---              customBorderedGameUI = createCustomBorder gameUI
---          in [customBorderedGameUI]
-
 
 -- -- App required functions
 drawUI :: Game -> [Widget ()]
 drawUI g = if getMenuStatus g
            then drawMainMenu g
            else [center 
+                    -- $ withBorderStyle BS.unicode
+                    -- $ borderWithLabel (str " Sokoban Game ")
                     $ hLimit 80 $ vLimit 30
                     $ hBox [padRight (Pad 2) (drawScore g), drawGame g]]
 
