@@ -192,13 +192,13 @@ drawGame gs
         | pos `elem` boxesOnTargets = withAttr boxOnTargetAttr $ str boxFigure  -- Green for boxes on a target
         | pos `elem` toList (getWall gs) = withAttr wallAttr $ str wallFigure
         | pos `elem` holePositions = withAttr holeAttr $ str holeFigure
-        | pos `elem` fragilePositions = withAttr fragileAttr $ str fragileFigure
         | pos `elem` icePositions = withAttr iceAttr $ str iceFigure
         | pos `elem` redBoxPositions = withAttr redBoxAttr $ str boxFigure
         | pos `elem` blueBoxPositions = withAttr blueBoxAttr $ str boxFigure
         | pos `elem` redTargetPositions = withAttr redTargetAttr $ str targetFigure
         | pos `elem` blueTargetPositions = withAttr blueTargetAttr $ str targetFigure
         | pos `elem` boxPositions && not (pos `elem` redBoxPositions || pos `elem` blueBoxPositions)  = withAttr wildBoxAttr $ str boxFigure
+        | pos `elem` fragilePositions = withAttr fragileAttr $ str fragileFigure
         | otherwise = str $ replicate 3 ' '
 
 getColoredBoxPositions :: String -> Game -> Seq Coord
