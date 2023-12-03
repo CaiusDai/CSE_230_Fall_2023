@@ -251,6 +251,7 @@ step d g =
                                     -- Box is pushed into a hole, remove the box and the hole
                                     g & boxes .~ S.deleteAt boxIndex (g ^. boxes)
                                       & holes .~ S.deleteAt holeIndex (g ^. holes)
+                                      & user .~ nextUserPos
                                 (Nothing, Nothing, _) ->
                                     -- move user, move box
                                     updateFragileAndHole nextUserPos
