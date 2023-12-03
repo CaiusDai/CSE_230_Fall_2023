@@ -6,9 +6,11 @@ module Sokoban (
     b1, b2, b3,
     user, boxes, walls, targets,
     getUser, getBoxes, getTargets, getWall,getScore, getNumTarget,getSteps,getTimer,updateTimer,
-    getMenuStatus, updateMenuStatus, getGameMode,updateGameMode,
+    getMenuStatus, updateMenuStatus, getGameMode,updateGameMode, getHoles, getFragiles, getIces,
+    getBoxIdx,
     step, checkSuccess,haltTimer,startTimer,
     up, down, left, right,
+    Coord(..),
     nextPos, Game(Game), Direction, checkOnTarget,GameMode(Single,Multi)
 ) where
 
@@ -279,6 +281,15 @@ getTargets g = g^. targets
 getWall :: Game -> Seq Coord 
 getWall g = g^. walls
 
+getHoles :: Game -> Seq Coord 
+getHoles g = g^. holes
+
+getFragiles :: Game -> Seq Coord
+getFragiles g = g^. fragileFloors
+
+getIces :: Game -> Seq Coord
+getIces g = g^. icefloors
+
 getNumTarget :: Game -> Int
 getNumTarget g = g^. num_target
 
@@ -291,6 +302,7 @@ getBoxCat g = g^. boxCat
 
 getBoxIdx :: Game -> IndexMap 
 getBoxIdx g = g^.boxIdx
+
 getSteps :: Game -> Int
 getSteps g = g^. num_steps
 
