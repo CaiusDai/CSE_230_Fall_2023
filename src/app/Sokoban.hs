@@ -3,7 +3,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Sokoban (
-    b1, b2,
+    b1, b2, b3,
     user, boxes, walls, targets,
     getUser, getBoxes, getTargets, getWall,getScore, getNumTarget,getSteps,getTimer,updateTimer,
     getMenuStatus, updateMenuStatus, getGameMode,updateGameMode,
@@ -20,6 +20,8 @@ import qualified Data.Sequence as S
 import Data.Set (fromList)
 import Data.Foldable (toList,length)
 import Data.Maybe (isJust)
+
+import qualified Data.Map as M hiding (update) 
 
 
 data Game = Game {
@@ -39,7 +41,11 @@ data Game = Game {
     _score  :: Int,
     _suceess :: Bool,
     _dead    :: Bool,
-    _num_target:: Int,
+    _num_target:: Int, 
+
+    -- boxes update
+    _boxCat  :: Seq String,
+    _boxIdx  :: IndexMap,
     _num_steps:: Int,
     _timer_seconds   :: Int,
     _timer_running   :: Bool,
@@ -52,6 +58,9 @@ data Game = Game {
 data GameMode = Single | Multi deriving (Show,Eq)
 
 type Coord = V2 Int
+
+type IndexMap = M.Map String (Seq Int)
+
 
 data Direction = Up | Down | Left | Right deriving (Show, Eq)
 
@@ -80,6 +89,9 @@ box' = V2 (xm + 1) (ym + 1)
 boxes' = S.fromList [box']
 num_targets = 1
 
+-- only one category for box
+
+idx1 = S.fromList([0])
 b1 :: Game
 b1 = Game
         { _user    = V2 xm ym
@@ -93,6 +105,8 @@ b1 = Game
         , _suceess = False
         , _dead    = False
         , _num_target = 1
+        , _boxCat = S.fromList(["targets"])
+        , _boxIdx = M.singleton "targets" idx1
         , _num_steps = 0
         , _timer_seconds = 0
         , _timer_running = False
@@ -100,26 +114,57 @@ b1 = Game
         , _game_mode = Single
         }
 
-boxes'' =  S.fromList[V2 6 4, V2 6 6]
-targets'' = S.fromList[V2 6 3, V2 6 7]
-num_targets' = 2
+idx2 = S.fromList([0,1])
 b2 :: Game
 b2 = Game
         { _user    = V2 xm ym
         , _box     = box'
-        , _boxes   = boxes''
+        , _boxes   = S.fromList[V2 6 4, V2 6 6]
         , _walls   = wall
         , _target  = target'
-        , _targets = targets''
+        , _targets = S.fromList[V2 6 3, V2 6 7]
         , _icefloors = S.fromList [V2 5 4, V2 5 6]
         , _fragileFloors = S.fromList [V2 7 5]
         , _holes         = S.empty
-
         , _dir     = Up
         , _score  = 0
         , _suceess = False
         , _dead    = False
-        , _num_target = num_targets'
+        , _num_target = 2
+        , _boxCat = S.fromList(["targets"])
+        , _boxIdx = M.singleton "targets" idx2
+        }
+
+
+boxidx :: IndexMap
+redidx = S.fromList [0]
+blueidx = S.fromList [1, 2]
+empty = M.empty
+boxidx = M.insert "red" redidx . M.insert "blue" blueidx $ empty
+
+idx3 = S.fromList([0,1,2])
+b3 :: Game
+b3 = Game
+        { _user    = V2 xm ym
+        , _box     = box'
+        , _boxes   = S.fromList[V2 4 5, V2 6 4, V2 6 6, V2 6 2, V2 5 7]
+        -- ,_boxes   = S.fromList[V2 6 6, V2 4 6, V2 5 6, V2 2 3, V2 3 3, V2 4 3]
+        , _walls   = wall
+        , _target  = target'
+        , _targets = S.fromList[V2 3 5, V2 6 3, V2 6 7]
+        -- , _targets = S.fromList[V2 6 6, V2 4 6, V2 5 6]
+        -- ,_targets = S.fromList[V2 2 3, V2 3 3, V2 4 3]
+        , _icefloors = S.fromList [V2 5 4, V2 5 8]
+        , _fragileFloors = S.fromList [V2 7 5]
+        , _holes         = S.empty
+        , _dir     = Up
+        , _score  = 0
+        , _suceess = False
+        , _dead    = False
+        , _num_target = 3
+        -- boxes update
+        , _boxCat = S.fromList(["red","blue"])
+        , _boxIdx = boxidx
         , _num_steps = 0
         , _timer_seconds = 0
         , _timer_running = False
@@ -127,18 +172,37 @@ b2 = Game
         , _game_mode = Single
         }
 
+
 findIndex :: Coord -> Seq Coord -> Maybe Int
-findIndex element seq = elemIndexL element seq
+findIndex = elemIndexL 
 
 moveBox :: Int -> Coord -> Seq Coord -> Seq Coord
-moveBox index newValue seq = (update index newValue seq)
+moveBox  = update
 
-checkSuccess :: Seq Coord -> Seq Coord -> Bool 
-checkSuccess  seq1 seq2 = 
+
+indices2Seq :: Seq Int -> Seq Coord -> Seq Coord
+indices2Seq indices seq = S.fromList [seq `S.index` idx | idx <- toList indices]
+
+checkCondition :: Seq Coord -> Seq Coord -> Bool 
+checkCondition  seq1 seq2 = 
     let set1 = fromList (toList seq1)
         set2 = fromList (toList seq2) 
     in 
         if set1 == set2 then True else False
+
+
+checkSuccess :: Game -> Bool
+checkSuccess g = checkHelper (M.toList (g^. boxIdx))
+  where
+    checkHelper [] = True  
+    checkHelper ((key, indices):rest) =
+      let targetSeq = indices2Seq indices (g^.targets)
+          boxesSeq = indices2Seq indices (g^.boxes)
+      in 
+        if not (checkCondition targetSeq boxesSeq)
+            then False  
+            else checkHelper rest 
+
 
 -- Given a sequence of boxes and a sequence of targets, check which boxes are on targets
 checkOnTarget :: Seq Coord -> Seq Coord -> Seq Bool
@@ -217,6 +281,11 @@ getScore :: Game -> Int
 getScore g = let boxesOnTargets = checkOnTarget (getBoxes g) (getTargets g)
                 in length $ filter id $ toList boxesOnTargets
 
+getBoxCat :: Game -> Seq String 
+getBoxCat g = g^. boxCat
+
+getBoxIdx :: Game -> IndexMap 
+getBoxIdx g = g^.boxIdx
 getSteps :: Game -> Int
 getSteps g = g^. num_steps
 
