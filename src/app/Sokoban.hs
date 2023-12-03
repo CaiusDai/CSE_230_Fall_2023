@@ -133,6 +133,11 @@ b2 = Game
         , _num_target = 2
         , _boxCat = S.fromList(["targets"])
         , _boxIdx = M.singleton "targets" idx2
+        , _num_steps = 0
+        , _timer_seconds = 0
+        , _timer_running = False
+        , _in_menu = True
+        , _game_mode = Single
         }
 
 
