@@ -96,11 +96,11 @@ drawUI g = if getMenuStatus g
 
 drawMainMenu :: Game -> [Widget n]
 drawMainMenu gs = [ vBox [ drawTitle
-                              , padTop (Pad 2) $ drawGameMode $ getGameMode gs
+                              , padTop (Pad 1) $ drawGameMode $ getGameMode gs
                               ]]
 
 drawTitle :: Widget n
-drawTitle = withAttr titleAttr $ center $ str "Sokoban Game"
+drawTitle = withAttr titleAttr $ center $ title
 
 drawGameMode :: GameMode -> Widget n
 drawGameMode gm = center $ vBox $ map (uncurry drawModeOption) options
@@ -108,11 +108,11 @@ drawGameMode gm = center $ vBox $ map (uncurry drawModeOption) options
     options = [(Single, "Single Player"), (Multi, "Multiplayer")]
     isSelected Single = gm == Single
     isSelected Multi = gm == Multi
-    drawModeOption mode label = selectable (isSelected mode) $ str label
+    drawModeOption mode label = selectable (isSelected mode) $ label
 
-selectable :: Bool -> Widget n -> Widget n
-selectable True  = withAttr selectedAttr . hCenter
-selectable False = withAttr normalAttr . hCenter
+selectable :: Bool -> String -> Widget n
+selectable True  w = withAttr selectedAttr . hCenter $ str $ " >> " ++ w
+selectable False w = withAttr normalAttr . hCenter $ str $ "    " ++ w
 
 
 drawScore :: Game -> Widget ()
@@ -183,7 +183,7 @@ theMap = attrMap V.defAttr
     , (boxOnTargetAttr, fg V.green)  -- For boxes on a target
     , (wallAttr, fg V.black)
     , (targetAttr, fg V.blue)
-    , (titleAttr, fg V.cyan `V.withStyle` V.bold)
+    , (titleAttr, fg V.cyan `V.withStyle` V.bold `V.withStyle` V.italic)
     , (selectedAttr, fg V.green `V.withStyle` V.bold)
     , (normalAttr, fg V.white)
     ]
@@ -203,6 +203,7 @@ handleEvent (VtyEvent (EvKey key [])) = do
         KChar 'w' -> put $ updateGameMode gs Single
         KChar 's' -> put $ updateGameMode gs Multi
         KEnter    -> put $ startTimer $ updateMenuStatus gs False
+        KChar 'q' -> halt
         _         -> return ()
     else if isGameSuccessful gs
         then case key of
@@ -240,9 +241,25 @@ boardSize :: Int
 boardSize = 10  -- Change this value to your desired board size
 
 
+asciiS, asciiO, asciiK, asciiB, asciiA, asciiN :: String
+asciiS = " SSSS \nS     \n SSS  \n    S \nSSSS  "
+asciiO = " OOO  \nO   O \nO   O \nO   O \n OOO  "
+asciiK = "K   K \nK  K  \nKKK   \nK  K  \nK   K "
+asciiB = "BBBB  \nB   B \nBBBB  \nB   B \nBBBB  "
+asciiA = "  AAA   \n A   A  \n AAAAA  \nA     A \nA     A "
+asciiN = "N   N \nNN  N \nN N N \nN  NN \nN   N "
 
+drawAscii :: String -> Widget n
+drawAscii charc =  str charc
 
-
+title :: Widget n
+title = hBox [ padRight (Pad 2) $ drawAscii asciiS, 
+               padRight (Pad 2) $ drawAscii asciiO, 
+               padRight (Pad 2) $ drawAscii asciiK, 
+               padRight (Pad 2) $ drawAscii asciiO, 
+               padRight (Pad 2) $ drawAscii asciiB, 
+               padRight (Pad 2) $ drawAscii asciiA, 
+               padRight (Pad 2) $ drawAscii asciiN ]
 
 
 
