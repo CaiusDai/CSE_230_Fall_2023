@@ -23,7 +23,7 @@ import Data.Set (fromList)
 import Data.Foldable (toList,length)
 import Data.Maybe (isJust)
 
-import qualified Data.Map as M hiding (update) 
+import qualified Data.Map as M
 
 
 data Game = Game {
@@ -217,6 +217,13 @@ checkOnTarget boxes targets =
     let targetsList = toList targets  -- Convert targets sequence to list for easy comparison
     in S.fromList [box `elem` targetsList | box <- toList boxes]
 
+-- Check if a box at a given index is in BoxIdx
+isBoxInBoxIdx :: Int -> Game -> Bool
+isBoxInBoxIdx boxIndex g =
+  let boxIdxMap = g^.boxIdx
+      boxList = S.index (g^.boxes) boxIndex
+  in any (elem boxIndex . snd) (M.toList boxIdxMap)
+
 step :: Direction -> Game -> Game
 step d g =
     let nextUserPos = nextPos d (g ^. user)
@@ -249,9 +256,12 @@ step d g =
                             case (isNextNextWall, isNextNextBox, isNextNextHole) of
                                 (Nothing, Nothing, Just holeIndex) ->
                                     -- Box is pushed into a hole, remove the box and the hole
-                                    g & boxes .~ S.deleteAt boxIndex (g ^. boxes)
-                                      & holes .~ S.deleteAt holeIndex (g ^. holes)
-                                      & user .~ nextUserPos
+                                    let isBoxIdx = isBoxInBoxIdx boxIndex g
+                                    in if isBoxIdx
+                                        then g & dead .~ True  -- If in BoxIdx, update dead to true
+                                        else g & boxes .~ S.deleteAt boxIndex (g ^. boxes)
+                                               & holes .~ S.deleteAt holeIndex (g ^. holes)
+                                               & user .~ nextUserPos
                                 (Nothing, Nothing, _) ->
                                     -- move user, move box
                                     updateFragileAndHole nextUserPos
