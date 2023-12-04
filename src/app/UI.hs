@@ -117,7 +117,7 @@ drawUI g = if getMenuStatus g
 
 drawMainMenu :: Game -> [Widget n]
 drawMainMenu gs = [ vBox [ drawTitle
-                              , padTop (Pad 1) $ drawGameMode $ getGameMode gs
+                              , padTop (Pad 1) $ hBox [drawMainMenuHelp,drawGameMode $ getGameMode gs]
                               ]]
 
 drawTitle :: Widget n
@@ -323,3 +323,13 @@ title = hBox [ padRight (Pad 2) $ drawAscii asciiS,
 
 
 
+drawMainMenuHelp :: Widget ()
+drawHelp = withBorderStyle BS.unicode
+            $ borderWithLabel (str " Welcome to Sokoban!! ")
+            $ padAll 2
+            $ vBox [ str "Controls:"
+                   , str " W - Move Up Selection"
+                   , str " S - Move Down Selection"
+                   , str " Q - Quit Game"
+                   , str " Enter - Confirm Selection"
+                   ]
