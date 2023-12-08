@@ -37,6 +37,9 @@ data Game = Game {
     _icefloors :: Seq Coord,
     _fragileFloors :: Seq Coord,
     _holes         :: Seq Coord,
+    _doors        :: Seq Coord,     
+    _switch       :: Coord,         
+    _switchState  :: Bool,
     
     -- states
     _dir     :: Direction,
@@ -164,6 +167,9 @@ b3 = Game
         , _icefloors = S.fromList [V2 5 4, V2 5 8]
         , _fragileFloors = S.fromList [V2 7 5]
         , _holes         = S.empty
+        ,_doors        =  S.fromList [V2 5 6]   
+        ,_switch       =  V2 7 4       
+        ,_switchState  = False
         , _dir     = Up
         , _score  = 0
         , _suceess = False
@@ -228,56 +234,68 @@ step :: Direction -> Game -> Game
 step d g =
     let nextUserPos = nextPos d (g ^. user)
         isNextWall = findIndex nextUserPos (g ^. walls)
+        isNextDoor = findIndex nextUserPos (g ^. doors) /= Nothing && not (g ^. switchState)
         isNextBox = findIndex nextUserPos (g ^. boxes)
         isNextHole = findIndex nextUserPos (g ^. holes)
         isNextFragile = findIndex nextUserPos (g ^. fragileFloors)
+        isNextSwitch = nextUserPos == (g ^. switch)
+        isBoxOnSwitch = isJust (findIndex (g ^. switch) (g ^. boxes))
+        isUserOrBoxOnSwitch = isNextSwitch || isBoxOnSwitch
+
         updateFragileAndHole pos 
             | isJust (findIndex pos (g ^. fragileFloors)) = 
                 g & fragileFloors %~ S.filter (/= pos)
                   & holes %~ (S.|> pos)
             | otherwise = g
+
         moveBoxToNextPos boxPos =
             let nextBoxPos = nextPos d boxPos
-            in if findIndex nextBoxPos (g ^. icefloors) /= Nothing
-               then moveBoxToNextPos nextBoxPos
+                isNextBoxPosDoor = findIndex nextBoxPos (g ^. doors) /= Nothing && not (g ^. switchState)
+                isNextBoxPosWall = findIndex nextBoxPos (g ^. walls) /= Nothing
+                isNextBoxPosBox = isJust (findIndex nextBoxPos (g ^. boxes))
+            in if isNextBoxPosWall || isNextBoxPosDoor || isNextBoxPosBox
+               then boxPos
                else nextBoxPos
-    in
-        case isNextWall of
-            Just _ -> g -- User cannot move into a wall
-            Nothing ->
-                case (isNextBox, isNextHole) of
-                    (Just boxIndex, _) ->
-                        let nextBoxPos = nextUserPos
-                            finalBoxPos = moveBoxToNextPos nextBoxPos
-                            isNextNextWall = findIndex finalBoxPos (g ^. walls)
-                            isNextNextBox = findIndex finalBoxPos (g ^. boxes)
-                            isNextNextHole = findIndex finalBoxPos (g ^. holes)
-                        in
-                            case (isNextNextWall, isNextNextBox, isNextNextHole) of
-                                (Nothing, Nothing, Just holeIndex) ->
-                                    -- Box is pushed into a hole, remove the box and the hole
-                                    let isBoxIdx = isBoxInBoxIdx boxIndex g
-                                    in if isBoxIdx
-                                        then g & dead .~ True  -- If in BoxIdx, update dead to true
-                                        else g & boxes .~ S.deleteAt boxIndex (g ^. boxes)
-                                               & holes .~ S.deleteAt holeIndex (g ^. holes)
-                                               & user .~ nextUserPos
-                                (Nothing, Nothing, _) ->
-                                    -- move user, move box
-                                    updateFragileAndHole nextUserPos
-                                    & user .~ nextUserPos
-                                    & boxes .~ (update boxIndex finalBoxPos (g ^. boxes))
-                                _ -> g -- Movement blocked by a wall or another box
-                    (Nothing, Just _) ->
-                        -- User steps into a hole
-                        updateFragileAndHole nextUserPos
-                        & user .~ nextUserPos
-                        & dead .~ True
-                    (Nothing, _) ->
-                        -- Normal movement
-                        let g' = updateFragileAndHole nextUserPos
-                        in g' & user .~ nextUserPos
-            _ -> g
+
+        isAnyBoxOnSwitch = any (\boxPos -> boxPos == (g ^. switch)) (toList (g ^. boxes))
+        isSwitchActive = (g ^. user) == (g ^. switch) || isAnyBoxOnSwitch
+
+    in case (isNextWall, isNextDoor) of
+        (Just _, _) -> g -- User cannot move into a wall
+        (_, True) -> g -- User cannot move into a closed door
+        _ ->
+            case (isNextBox, isNextHole) of
+                (Just boxIndex, _) ->
+                    let nextBoxPos = nextUserPos
+                        finalBoxPos = moveBoxToNextPos nextBoxPos
+                        isNextNextWall = findIndex finalBoxPos (g ^. walls)
+                        isNextNextBox = findIndex finalBoxPos (g ^. boxes)
+                        isNextNextHole = findIndex finalBoxPos (g ^. holes)
+                    in
+                        case (isNextNextWall, isNextNextBox, isNextNextHole) of
+                            (Nothing, Nothing, Just holeIndex) ->
+                                let isBoxIdx = isBoxInBoxIdx boxIndex g
+                                in if isBoxIdx
+                                    then g & dead .~ True
+                                    else g & boxes .~ S.deleteAt boxIndex (g ^. boxes)
+                                           & holes .~ S.deleteAt holeIndex (g ^. holes)
+                                           & user .~ nextUserPos
+                            (Nothing, Nothing, _) ->
+                                if finalBoxPos == nextBoxPos
+                                then g -- Box cannot be moved (due to door or other box)
+                                else updateFragileAndHole nextUserPos
+                                     & user .~ nextUserPos
+                                     & boxes .~ (update boxIndex finalBoxPos (g ^. boxes))
+                                     & switchState .~ isSwitchActive
+                            _ -> g -- Movement blocked by a wall or another box
+                (Nothing, Just _) ->
+                    updateFragileAndHole nextUserPos
+                    & user .~ nextUserPos
+                    & dead .~ True
+                (Nothing, _) ->
+                    let g' = updateFragileAndHole nextUserPos
+                    in g' & user .~ nextUserPos
+                          & switchState .~ isSwitchActive
 
 -- Getters and Setters
 getUser :: Game -> Coord
