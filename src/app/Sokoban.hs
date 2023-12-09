@@ -23,7 +23,7 @@ import Data.Set (fromList)
 import Data.Foldable (toList,length)
 import Data.Maybe (isJust)
 
-import qualified Data.Map as M hiding (update) 
+import qualified Data.Map as M
 
 
 data Game = Game {
@@ -37,6 +37,14 @@ data Game = Game {
     _icefloors :: Seq Coord,
     _fragileFloors :: Seq Coord,
     _holes         :: Seq Coord,
+    _doors        :: Seq Coord,     
+    _switch       :: Coord,         
+    _switchState  :: Bool,
+
+    -- rail
+    _rail :: Seq Coord,
+    _railEnEx :: Seq Coord,
+    -- _inRail :: Bool, 
     
     -- states
     _dir     :: Direction,
@@ -152,10 +160,9 @@ boxidx = M.insert "red" redidx . M.insert "blue" blueidx $ empty
 idx3 = S.fromList([0,1,2])
 b3 :: Game
 b3 = Game
-        { _user    = V2 xm ym
+        { _user    = V2 3 6
         , _box     = box'
-        , _boxes   = S.fromList[V2 4 5, V2 6 4, V2 6 6, V2 6 2, V2 5 7]
-        -- ,_boxes   = S.fromList[V2 6 6, V2 4 6, V2 5 6, V2 2 3, V2 3 3, V2 4 3]
+        , _boxes   = S.fromList[V2 3 5, V2 6 4, V2 6 6, V2 6 2, V2 5 7]
         , _walls   = wall
         , _target  = target'
         , _targets = S.fromList[V2 3 5, V2 6 3, V2 6 7]
@@ -164,6 +171,15 @@ b3 = Game
         , _icefloors = S.fromList [V2 5 4, V2 5 8]
         , _fragileFloors = S.fromList [V2 7 5]
         , _holes         = S.empty
+        ,_doors        =  S.fromList [V2 5 6]   
+        ,_switch       =  V2 7 4       
+        ,_switchState  = False
+
+        ,_rail     = S.fromList[V2 3 3, V2 3 4]
+        ,_railEnEx = S.fromList[V2 2 3, V2 4 4]
+        -- ,_inRail = False
+
+
         , _dir     = Up
         , _score  = 0
         , _suceess = False
@@ -217,56 +233,140 @@ checkOnTarget boxes targets =
     let targetsList = toList targets  -- Convert targets sequence to list for easy comparison
     in S.fromList [box `elem` targetsList | box <- toList boxes]
 
-step :: Direction -> Game -> Game
-step d g =
+-- Check if a box at a given index is in BoxIdx
+isBoxInBoxIdx :: Int -> Game -> Bool
+isBoxInBoxIdx boxIndex g =
+  let boxIdxMap = g^.boxIdx
+      boxList = S.index (g^.boxes) boxIndex
+  in any (elem boxIndex . snd) (M.toList boxIdxMap)
+
+
+
+step_ :: Direction -> Game -> Game
+step_ d g =
     let nextUserPos = nextPos d (g ^. user)
         isNextWall = findIndex nextUserPos (g ^. walls)
+        isNextDoor = findIndex nextUserPos (g ^. doors) /= Nothing && not (g ^. switchState)
         isNextBox = findIndex nextUserPos (g ^. boxes)
         isNextHole = findIndex nextUserPos (g ^. holes)
         isNextFragile = findIndex nextUserPos (g ^. fragileFloors)
+        isNextSwitch = nextUserPos == (g ^. switch)
+        isBoxOnSwitch = isJust (findIndex (g ^. switch) (g ^. boxes))
+        isUserOrBoxOnSwitch = isNextSwitch || isBoxOnSwitch
+
+        -- for rail
+        isNextRail = undefined 
+        isNextEnEx = undefined 
+
         updateFragileAndHole pos 
             | isJust (findIndex pos (g ^. fragileFloors)) = 
                 g & fragileFloors %~ S.filter (/= pos)
                   & holes %~ (S.|> pos)
             | otherwise = g
+
         moveBoxToNextPos boxPos =
             let nextBoxPos = nextPos d boxPos
-            in if findIndex nextBoxPos (g ^. icefloors) /= Nothing
-               then moveBoxToNextPos nextBoxPos
+                isNextBoxPosDoor = findIndex nextBoxPos (g ^. doors) /= Nothing && not (g ^. switchState)
+                isNextBoxPosWall = findIndex nextBoxPos (g ^. walls) /= Nothing
+                isNextBoxPosBox = isJust (findIndex nextBoxPos (g ^. boxes))
+            in if isNextBoxPosWall || isNextBoxPosDoor || isNextBoxPosBox
+               then boxPos
                else nextBoxPos
+
+        isAnyBoxOnSwitch = any (\boxPos -> boxPos == (g ^. switch)) (toList (g ^. boxes))
+        isSwitchActive = (g ^. user) == (g ^. switch) || isAnyBoxOnSwitch
+
+    in case (isNextWall, isNextDoor) of
+        (Just _, _) -> g   -- User cannot move into a wall
+        (_, True) -> g     -- User cannot move into a closed door
+        _ ->
+            case (isNextBox, isNextHole) of
+                (Just boxIndex, _) ->
+                    let nextBoxPos = nextUserPos 
+                        finalBoxPos = moveBoxToNextPos nextBoxPos
+                        isNextNextWall = findIndex finalBoxPos (g ^. walls)
+                        isNextNextBox = findIndex finalBoxPos (g ^. boxes)
+                        isNextNextHole = findIndex finalBoxPos (g ^. holes)
+                    in
+                        case (isNextNextWall, isNextNextBox, isNextNextHole) of
+                            (Nothing, Nothing, Just holeIndex) ->
+                                let isBoxIdx = isBoxInBoxIdx boxIndex g
+                                in if isBoxIdx
+                                    then g & dead .~ True
+                                    else g & boxes .~ S.deleteAt boxIndex (g ^. boxes)
+                                           & holes .~ S.deleteAt holeIndex (g ^. holes)
+                                           & user .~ nextUserPos
+                            (Nothing, Nothing, _) ->
+                                if finalBoxPos == nextBoxPos
+                                then g -- Box cannot be moved (due to door or other box)
+                                else updateFragileAndHole nextUserPos
+                                     & user .~ nextUserPos
+                                     & boxes .~ (update boxIndex finalBoxPos (g ^. boxes))
+                                     & switchState .~ isSwitchActive
+                            _ -> g -- Movement blocked by a wall or another box
+                (Nothing, Just _) ->
+                    updateFragileAndHole nextUserPos
+                    & user .~ nextUserPos
+                    & dead .~ True
+                (Nothing, _) ->
+                    let g' = updateFragileAndHole nextUserPos
+                    in g' & user .~ nextUserPos
+                          & switchState .~ isSwitchActive 
+
+
+step :: Direction -> Game -> Game
+step d g =
+    let nextUserPos = nextPos d (g ^. user) 
+        isNextWall = findIndex nextUserPos (g ^. walls)
+        isNextBox = findIndex nextUserPos (g ^. boxes)
     in
-        case isNextWall of
-            Just _ -> g -- User cannot move into a wall
+        case isNextBox of
             Nothing ->
-                case (isNextBox, isNextHole) of
-                    (Just boxIndex, _) ->
-                        let nextBoxPos = nextUserPos
-                            finalBoxPos = moveBoxToNextPos nextBoxPos
-                            isNextNextWall = findIndex finalBoxPos (g ^. walls)
-                            isNextNextBox = findIndex finalBoxPos (g ^. boxes)
-                            isNextNextHole = findIndex finalBoxPos (g ^. holes)
-                        in
-                            case (isNextNextWall, isNextNextBox, isNextNextHole) of
-                                (Nothing, Nothing, Just holeIndex) ->
-                                    -- Box is pushed into a hole, remove the box and the hole
-                                    g & boxes .~ S.deleteAt boxIndex (g ^. boxes)
-                                      & holes .~ S.deleteAt holeIndex (g ^. holes)
-                                (Nothing, Nothing, _) ->
-                                    -- move user, move box
-                                    updateFragileAndHole nextUserPos
-                                    & user .~ nextUserPos
-                                    & boxes .~ (update boxIndex finalBoxPos (g ^. boxes))
-                                _ -> g -- Movement blocked by a wall or another box
-                    (Nothing, Just _) ->
-                        -- User steps into a hole
-                        updateFragileAndHole nextUserPos
-                        & user .~ nextUserPos
-                        & dead .~ True
-                    (Nothing, _) ->
-                        -- Normal movement
-                        let g' = updateFragileAndHole nextUserPos
-                        in g' & user .~ nextUserPos
-            _ -> g
+                case isNextWall of
+                    Nothing ->
+                        -- move
+                        step_ d g
+                    Just _ ->
+                        g
+            Just nextBoxIndex -> -- the index of the box
+                -- handle collision with box
+                let nextBoxPos = nextUserPos
+                    nextNextBoxPos = nextPos d nextBoxPos
+                    isNextNextWall = findIndex nextNextBoxPos (g ^. walls)
+                    isNextNextBox = findIndex nextNextBoxPos (g ^. boxes)
+                    isNextNextTarget = findIndex nextNextBoxPos (g ^. targets)
+                in
+                    case (isNextNextWall, isNextNextBox ) of
+                        (Just _, _)  -> g 
+                        (_ , Just _) -> g 
+                        (Nothing, Nothing) ->
+                            -- move user, move box
+                            let nextUserPos = nextPos d (g ^. user)
+                                boxPos  = nextUserPos 
+                                nextBoxPos = nextPos d boxPos
+                                isNextBox = findIndex nextUserPos (g ^. boxes)
+                            in
+                                case isNextBox of 
+                                    Just nextBoxIndex -> 
+                                        case ( (elem boxPos (g^. rail)),
+                                            (elem nextBoxPos (g^. rail)),
+                                            (elem nextBoxPos (g^. railEnEx)) )of 
+                                            (True, True, _) -> 
+                                                g & user .~ nextUserPos
+                                                & boxes .~ (update nextBoxIndex nextBoxPos (g ^. boxes))
+                                            (True, _, True) -> 
+                                                step_ d g
+                                            (True, False, False) -> g
+                                            
+                                            (False, _, _) -> 
+
+                                                case ((elem boxPos (g^. railEnEx)), 
+                                                    (elem nextBoxPos (g^. rail))  ) of 
+                                                    (True, _) -> 
+                                                        step_ d g
+                                                    (False, True)  -> g 
+                                                    (False, False) -> 
+                                                        step_ d g
 
 -- Getters and Setters
 getUser :: Game -> Coord
@@ -302,6 +402,15 @@ getBoxCat g = g^. boxCat
 
 getBoxIdx :: Game -> IndexMap 
 getBoxIdx g = g^.boxIdx
+
+getRail :: Game -> Seq Coord
+getRail g = g^. rail 
+
+getRailEnEx :: Game -> Seq Coord 
+getRailEnEx g = g^. railEnEx 
+
+-- getInRail :: Game -> Bool 
+-- getInRail g = g^.inRail
 
 getSteps :: Game -> Int
 getSteps g = g^. num_steps
