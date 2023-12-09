@@ -40,6 +40,8 @@ data Game = Game {
     _doors        :: Seq Coord,     
     _switch       :: Coord,         
     _switchState  :: Bool,
+
+    -- _rail :: Seq Coord,
     
     -- states
     _dir     :: Direction,
