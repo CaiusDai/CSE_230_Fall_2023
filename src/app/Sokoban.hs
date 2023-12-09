@@ -42,6 +42,7 @@ data Game = Game {
     _switchState  :: Bool,
 
     -- _rail :: Seq Coord,
+    -- _railDirs :: Seq Coord,  
     
     -- states
     _dir     :: Direction,
