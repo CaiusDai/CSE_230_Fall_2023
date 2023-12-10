@@ -8,10 +8,10 @@ module Sokoban (
     getUser, getBoxes, getTargets, getWall,getScore, getNumTarget,getSteps,getTimer,updateTimer,
     getMenuStatus, updateMenuStatus, getGameMode,updateGameMode, getHoles, getFragiles, getIces,
     getBoxIdx, getDead,getDoor, getSwitch,getRail, getRailEnEx,
-    step,step_, checkSuccess,haltTimer,startTimer,
+    step,step_, checkSuccess,haltTimer,startTimer, getMapIdx,updateMapIdx,
     up, down, left, right,
     Coord(..),
-    nextPos, Game(Game), Direction, checkOnTarget,GameMode(Single,Multi)
+    nextPos, Game(Game), Direction, checkOnTarget,GameMode(Single,Multi), UIState(MainMenu, MapSelection, GamePlay)
 ) where
 
 import Prelude hiding (Left, Right)
@@ -61,11 +61,14 @@ data Game = Game {
     _timer_running   :: Bool,
 
     -- menu related
-    _in_menu :: Bool,
-    _game_mode :: GameMode
+    _ui_state :: UIState,
+    _game_mode :: GameMode,
+    _map_idx :: Int
 } deriving (Show)
 
 data GameMode = Single | Multi deriving (Show,Eq)
+
+data UIState = MainMenu | MapSelection | GamePlay deriving (Eq, Show)
 
 type Coord = V2 Int
 
@@ -73,6 +76,7 @@ type IndexMap = M.Map String (Seq Int)
 
 
 data Direction = Up | Down | Left | Right deriving (Show, Eq)
+
 
 makeLenses ''Game
 
@@ -101,54 +105,116 @@ num_targets = 1
 
 -- only one category for box
 
-idx1 = S.fromList([0])
+-- idx1 = S.fromList([0])
+-- b1 :: Game
+-- b1 = Game
+--         { _user    = V2 xm ym
+--         , _box     = box'
+--         , _boxes   = boxes'
+--         , _walls   = wall
+--         , _target  = target'
+--         , _targets = targets'
+--         , _dir     = Up
+--         , _score  = 0
+--         , _suceess = False
+--         , _dead    = False
+--         , _num_target = 1
+--         , _boxCat = S.fromList(["targets"])
+--         , _boxIdx = M.singleton "targets" idx1
+--         , _num_steps = 0
+--         , _timer_seconds = 0
+--         , _timer_running = False
+--         , _game_mode = Single
+--         , _ui_state = MainMenu
+--         }
+
+-- idx2 = S.fromList([0,1])
+-- b2 :: Game
+-- b2 = Game
+--         { _user    = V2 xm ym
+--         , _box     = box'
+--         , _boxes   = S.fromList[V2 6 4, V2 6 6]
+--         , _walls   = wall
+--         , _target  = target'
+--         , _targets = S.fromList[V2 6 3, V2 6 7]
+--         , _icefloors = S.fromList [V2 5 4, V2 5 6]
+--         , _fragileFloors = S.fromList [V2 7 5]
+--         , _holes         = S.empty
+--         , _dir     = Up
+--         , _score  = 0
+--         , _suceess = False
+--         , _dead    = False
+--         , _num_target = 2
+--         , _boxCat = S.fromList(["targets"])
+--         , _boxIdx = M.singleton "targets" idx2
+--         , _num_steps = 0
+--         , _timer_seconds = 0
+--         , _timer_running = False
+--         , _game_mode = Single
+--         , _ui_state = MainMenu
+--         }
 b1 :: Game
 b1 = Game
-        { _user    = V2 xm ym
-        , _box     = box'
-        , _boxes   = boxes'
-        , _walls   = wall
-        , _target  = target'
-        , _targets = targets'
-        , _dir     = Up
-        , _score  = 0
-        , _suceess = False
-        , _dead    = False
-        , _num_target = 1
-        , _boxCat = S.fromList(["targets"])
-        , _boxIdx = M.singleton "targets" idx1
-        , _num_steps = 0
-        , _timer_seconds = 0
-        , _timer_running = False
-        , _in_menu = True
-        , _game_mode = Single
-        }
+    { _user = V2 1 1
+    , _box = V2 2 2   
+    , _boxes = S.fromList [V2 2 2]
+    , _walls = S.fromList [V2 0 0, V2 0 1, V2 0 2, V2 1 0, V2 2 0]
+    , _target = V2 3 3  
+    , _targets = S.fromList [V2 3 3]  
+    , _icefloors = S.empty  
+    , _fragileFloors = S.empty 
+    , _holes = S.empty  
+    , _doors = S.empty 
+    , _switch = V2 0 0 
+    , _switchState = False 
+    , _rail = S.empty 
+    , _railEnEx = S.empty 
+    , _dir = Up  
+    , _score = 0  
+    , _suceess = False 
+    , _dead = False 
+    , _num_target = 1 
+    , _boxCat = S.fromList ["standard"]  
+    , _boxIdx = M.singleton "standard" (S.fromList [0]) 
+    , _num_steps = 0  
+    , _timer_seconds = 0 
+    , _timer_running = False 
+    , _game_mode = Single  
+    , _ui_state = MainMenu  
+    , _map_idx = 0 
+    }
 
-idx2 = S.fromList([0,1])
 b2 :: Game
 b2 = Game
-        { _user    = V2 xm ym
-        , _box     = box'
-        , _boxes   = S.fromList[V2 6 4, V2 6 6]
-        , _walls   = wall
-        , _target  = target'
-        , _targets = S.fromList[V2 6 3, V2 6 7]
-        , _icefloors = S.fromList [V2 5 4, V2 5 6]
-        , _fragileFloors = S.fromList [V2 7 5]
-        , _holes         = S.empty
-        , _dir     = Up
-        , _score  = 0
-        , _suceess = False
-        , _dead    = False
-        , _num_target = 2
-        , _boxCat = S.fromList(["targets"])
-        , _boxIdx = M.singleton "targets" idx2
-        , _num_steps = 0
-        , _timer_seconds = 0
-        , _timer_running = False
-        , _in_menu = True
-        , _game_mode = Single
-        }
+    { _user = V2 1 2  
+    , _box = V2 3 2 
+    , _boxes = S.fromList [V2 3 2, V2 4 3]  
+    , _walls = S.fromList [V2 0 0, V2 0 1, V2 0 2, V2 1 0, V2 2 0, V2 3 0] 
+    , _target = V2 4 4 
+    , _targets = S.fromList [V2 4 4, V2 5 5] 
+    , _icefloors = S.empty 
+    , _fragileFloors = S.empty
+    , _holes = S.empty  
+    , _doors = S.empty 
+    , _switch = V2 0 0  
+    , _switchState = False 
+    , _rail = S.empty 
+    , _railEnEx = S.empty 
+    , _dir = Down  
+    , _score = 0 
+    , _suceess = False 
+    , _dead = False 
+    , _num_target = 2 
+    , _boxCat = S.fromList ["standard"]
+    , _boxIdx = M.singleton "standard" (S.fromList [0, 1])
+    , _num_steps = 0  
+    , _timer_seconds = 0 
+    , _timer_running = False  
+    , _game_mode = Single 
+    , _ui_state = MainMenu 
+    , _map_idx = 1
+    }
+
 
 
 boxidx :: IndexMap
@@ -179,7 +245,6 @@ b3 = Game
         ,_railEnEx = S.fromList[V2 2 3, V2 4 4]
         -- ,_inRail = False
 
-
         , _dir     = Up
         , _score  = 0
         , _suceess = False
@@ -191,8 +256,9 @@ b3 = Game
         , _num_steps = 0
         , _timer_seconds = 0
         , _timer_running = False
-        , _in_menu = True
         , _game_mode = Single
+        , _ui_state = MainMenu
+        , _map_idx = 0
         }
 
 
@@ -427,17 +493,23 @@ getSteps g = g^. num_steps
 getTimer :: Game -> Int
 getTimer g = g^. timer_seconds
 
-getMenuStatus :: Game -> Bool
-getMenuStatus g = g^. in_menu
+getMenuStatus :: Game -> UIState
+getMenuStatus g = g^. ui_state
 
-updateMenuStatus :: Game -> Bool -> Game
-updateMenuStatus g status = g & in_menu .~ status
+updateMenuStatus :: Game -> UIState -> Game
+updateMenuStatus g status = g & ui_state .~ status
 
 getGameMode :: Game -> GameMode
 getGameMode g = g^. game_mode
 
 updateGameMode :: Game -> GameMode -> Game
 updateGameMode g mode = g & game_mode .~ mode
+
+getMapIdx :: Game -> Int
+getMapIdx g = g^. map_idx
+
+updateMapIdx :: Game -> Int -> Game
+updateMapIdx g idx = g & map_idx .~ idx
 
 updateTimer :: Game -> Game
 updateTimer g = if g ^. timer_running 

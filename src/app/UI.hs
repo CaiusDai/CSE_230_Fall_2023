@@ -102,8 +102,13 @@ railFigure :: String
 railFigure = " # "
 
 initialState :: Game
-initialState = b3
+initialState = loadMap 0
 
+allMaps :: [Game]
+allMaps = [b1, b2, b3]
+
+mapNames :: [String]
+mapNames = ["Map 1","Map 2","Map 3"]
 
 -- App: Entry of UI
 app :: App Game TimerEvent ()
@@ -117,13 +122,19 @@ app = App { appDraw = drawUI
 
 -- -- App required functions
 drawUI :: Game -> [Widget ()]
-drawUI g = if getMenuStatus g
-           then drawMainMenu g
-           else [center
+drawUI g = case getMenuStatus g of
+            MainMenu -> drawMainMenu g
+            MapSelection ->  drawMapSelection g
+            GamePlay ->  drawGamePlay g
+
+
+drawGamePlay :: Game -> [Widget ()]
+drawGamePlay g = [center
                     $ withBorderStyle BS.unicode
                     $ borderWithLabel (str " Sokoban Game ")
                     $ hLimit 80 $ vLimit 30
                     $ hBox [padRight (Pad 2) (drawScore g), drawGame g, padLeft (Pad 2) drawHelp]]
+
 
 drawMainMenu :: Game -> [Widget n]
 drawMainMenu gs = [ vBox [ drawTitle
@@ -144,6 +155,20 @@ drawGameMode gm = center $ vBox $ map (uncurry drawModeOption) options
 selectable :: Bool -> String -> Widget n
 selectable True  w = withAttr selectedAttr . hCenter $ str $ " >> " ++ w
 selectable False w = withAttr normalAttr . hCenter $ str $ "    " ++ w
+
+
+drawMapSelection :: Game -> [Widget ()]
+drawMapSelection g = [center $ vBox (titleWidget : mapSelectionWidgets)]
+  where
+    titleWidget = withAttr titleAttr $ str "Select Map"
+    mapSelectionWidgets = zipWith (drawMapOption (getMapIdx g)) [0..] mapNames
+
+    drawMapOption :: Int -> Int -> String -> Widget ()
+    drawMapOption currentIndex idx mapName =
+        if currentIndex == idx
+        then withAttr selectedAttr $ str $ " >> " ++ mapName
+        else withAttr normalAttr $ str $ "    " ++ mapName
+
 
 
 drawScore :: Game -> Widget ()
@@ -271,6 +296,7 @@ theMap = attrMap V.defAttr
     , (railAttr, fg V.black)
     ]
 
+
 handleEvent :: BrickEvent () TimerEvent -> EventM () Game ()
 -- Handle Timer Events
 handleEvent (AppEvent Tick) = do
@@ -281,11 +307,18 @@ handleEvent (AppEvent Tick) = do
 -- Handle Key press Events
 handleEvent (VtyEvent (EvKey key [])) = do
     gs <- get
-    if getMenuStatus gs
+    if getMenuStatus gs == MainMenu
     then case key of
         KChar 'w' -> put $ updateGameMode gs Single
         KChar 's' -> put $ updateGameMode gs Multi
-        KEnter    -> put $ startTimer $ updateMenuStatus gs False
+        KEnter    -> put $ updateMenuStatus gs MapSelection
+        KChar 'q' -> halt
+        _         -> return ()
+    else if getMenuStatus gs == MapSelection
+    then case key of
+        KChar 'w' -> moveSelection Up gs
+        KChar 's' -> moveSelection Down gs
+        KEnter     -> put $ startTimer $ updateMenuStatus (loadMap (getMapIdx gs)) GamePlay
         KChar 'q' -> halt
         _         -> return ()
     else if isGameSuccessful gs || isGameFailed gs
@@ -307,6 +340,18 @@ handleEvent (VtyEvent (EvKey key [])) = do
         _         -> return ()
 handleEvent _ = return ()
 
+
+moveSelection :: Brick.Direction -> Game -> EventM () Game ()
+moveSelection dir gs = do
+    let idx = getMapIdx gs
+    let newIdx = if dir == Up then max 0 (idx - 1) else min (length mapNames - 1) (idx + 1)
+    put $ updateMapIdx gs newIdx
+
+
+loadMap :: Int -> Game
+loadMap idx = allMaps !! idx
+
+
 movePlayer :: So.Direction -> EventM () Game ()
 movePlayer direction  = do
     gs <- get
@@ -316,7 +361,19 @@ movePlayer direction  = do
     else put gs'
 
 restartGame :: EventM () Game ()
-restartGame = put initialState
+restartGame = do
+    gs <- get
+    let currentMapIdx = getMapIdx gs
+    let currentGameMode = getGameMode gs
+    let currentUIState = getMenuStatus gs
+
+    let resetGameState = loadMap currentMapIdx
+    let updatedGameModeState = updateGameMode resetGameState currentGameMode
+    let updatedUIState = updateMenuStatus updatedGameModeState currentUIState
+    let finalState = startTimer updatedUIState
+
+    put finalState
+
 
 
 -- Constants for the game board size and positions
