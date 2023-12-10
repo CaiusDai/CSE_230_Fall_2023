@@ -304,7 +304,7 @@ handleEvent _ = return ()
 movePlayer :: So.Direction -> EventM () Game ()
 movePlayer direction  = do
     gs <- get
-    let gs' = step_ direction gs
+    let gs' = step direction gs
     if isGameSuccessful gs'
     then put $ haltTimer gs'
     else put gs'
