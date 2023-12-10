@@ -258,7 +258,7 @@ b3 = Game
         , _timer_running = False
         , _game_mode = Single
         , _ui_state = MainMenu
-        , _map_idx = 0
+        , _map_idx = 2
         }
 
 

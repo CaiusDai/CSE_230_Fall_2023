@@ -102,7 +102,7 @@ railFigure :: String
 railFigure = " # "
 
 initialState :: Game
-initialState = loadMap 0
+initialState = loadMap 2
 
 allMaps :: [Game]
 allMaps = [b1, b2, b3]
