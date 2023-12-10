@@ -7,8 +7,8 @@ module Sokoban (
     user, boxes, walls, targets,
     getUser, getBoxes, getTargets, getWall,getScore, getNumTarget,getSteps,getTimer,updateTimer,
     getMenuStatus, updateMenuStatus, getGameMode,updateGameMode, getHoles, getFragiles, getIces,
-    getBoxIdx,
-    step, checkSuccess,haltTimer,startTimer,
+    getBoxIdx, getDead,getDoor, getSwitch,
+    step,step_, checkSuccess,haltTimer,startTimer,
     up, down, left, right,
     Coord(..),
     nextPos, Game(Game), Direction, checkOnTarget,GameMode(Single,Multi)
@@ -393,6 +393,9 @@ getIces g = g^. icefloors
 getNumTarget :: Game -> Int
 getNumTarget g = g^. num_target
 
+getDead :: Game -> Bool
+getDead g = g^. dead
+
 getScore :: Game -> Int
 getScore g = let boxesOnTargets = checkOnTarget (getBoxes g) (getTargets g)
                 in length $ filter id $ toList boxesOnTargets
@@ -408,6 +411,12 @@ getRail g = g^. rail
 
 getRailEnEx :: Game -> Seq Coord 
 getRailEnEx g = g^. railEnEx 
+
+getDoor :: Game -> Seq Coord 
+getDoor g = g^. doors
+
+getSwitch :: Game -> Coord
+getSwitch g = g^. switch
 
 -- getInRail :: Game -> Bool 
 -- getInRail g = g^.inRail
