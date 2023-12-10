@@ -47,9 +47,10 @@ holeAttr = attrName "holeAttr"
 fragileAttr = attrName "fragileAttr"
 iceAttr = attrName "iceAttr"
 
-doorAttr, switchAttr :: AttrName
+doorAttr, switchAttr, railAttr :: AttrName
 doorAttr = attrName "doorAttr"
 switchAttr = attrName "switchAttr"
+railAttr = attrName "railAttr"
 
 redBoxAttr, blueBoxAttr, redTargetAttr, blueTargetAttr :: AttrName
 redBoxAttr = attrName "redBoxAttr"
@@ -72,7 +73,7 @@ startTicking delay channel = forkIO $ forever $ do
 
 -- Unicode related definitions
 userFigure :: String
-userFigure = " 🏃"
+userFigure = " ♀️ "
 
 boxFigure :: String
 boxFigure = " ▣ "
@@ -81,22 +82,24 @@ targetFigure :: String
 targetFigure = " ⚑ "
 
 wallFigure :: String
-wallFigure = " 🧱"
-
+wallFigure = " 田"
 holeFigure :: String
-holeFigure = " 🕳️ "
+holeFigure = " ○ "
 
 fragileFigure :: String
-fragileFigure = " 🚫"
+fragileFigure = " ⚠️ "
 
 iceFigure :: String
-iceFigure = " 🧊"
+iceFigure = " ❄️ " 
 
 doorFigure :: String
-doorFigure = " 🚪"
+doorFigure = " █ "
 
 switchFigure :: String
-switchFigure = " 🔘"
+switchFigure = " ● "
+
+railFigure :: String
+railFigure = " # "
 
 initialState :: Game
 initialState = b3
@@ -117,10 +120,10 @@ drawUI :: Game -> [Widget ()]
 drawUI g = if getMenuStatus g
            then drawMainMenu g
            else [center
-                    -- $ withBorderStyle BS.unicode
-                    -- $ borderWithLabel (str " Sokoban Game ")
+                    $ withBorderStyle BS.unicode
+                    $ borderWithLabel (str " Sokoban Game ")
                     $ hLimit 80 $ vLimit 30
-                    $ hBox [padRight (Pad 2) (drawScore g), drawGame g]]
+                    $ hBox [padRight (Pad 2) (drawScore g), drawGame g, padLeft (Pad 2) drawHelp]]
 
 drawMainMenu :: Game -> [Widget n]
 drawMainMenu gs = [ vBox [ drawTitle
@@ -180,7 +183,7 @@ drawGame :: Game -> Widget ()
 drawGame gs
     | isGameFailed gs = drawFail
     | isGameSuccessful gs = drawSuccess
-    | otherwise = center  $ vBox rows
+    | otherwise = center $ border $ vBox rows
   where
     rows = [hBox $ cellsInRow y | y <- [0..boardSize-1]]
     cellsInRow y = [cell (V2 x y) | x <- [0..boardSize-1]]
@@ -194,6 +197,7 @@ drawGame gs
     redTargetPositions = toList $ getColoredTargetPositions "red" gs
     blueTargetPositions = toList $ getColoredTargetPositions "blue" gs
     doorPositions = toList (getDoor gs)
+    railPositions = toList (getRail gs) ++ toList (getRailEnEx gs)
 
     cell pos
         | pos == getUser gs = withAttr playerAttr $ str userFigure
@@ -208,6 +212,7 @@ drawGame gs
         | pos `elem` icePositions = withAttr iceAttr $ str iceFigure
         | pos `elem` fragilePositions = withAttr fragileAttr $ str fragileFigure
         | pos `elem` doorPositions = withAttr doorAttr $ str doorFigure
+        | pos `elem` railPositions = withAttr railAttr $ str railFigure
         | pos == getSwitch gs = withAttr switchAttr $ str switchFigure
         | otherwise = str $ replicate 3 ' '
 
@@ -262,7 +267,8 @@ theMap = attrMap V.defAttr
     , (redTargetAttr, fg V.red)
     , (blueTargetAttr, fg V.blue)
     , (doorAttr, fg V.green)
-    , (switchAttr, fg V.white)
+    , (switchAttr, fg V.red)
+    , (railAttr, fg V.black)
     ]
 
 handleEvent :: BrickEvent () TimerEvent -> EventM () Game ()

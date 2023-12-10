@@ -7,7 +7,7 @@ module Sokoban (
     user, boxes, walls, targets,
     getUser, getBoxes, getTargets, getWall,getScore, getNumTarget,getSteps,getTimer,updateTimer,
     getMenuStatus, updateMenuStatus, getGameMode,updateGameMode, getHoles, getFragiles, getIces,
-    getBoxIdx, getDead,getDoor, getSwitch,
+    getBoxIdx, getDead,getDoor, getSwitch,getRail, getRailEnEx,
     step,step_, checkSuccess,haltTimer,startTimer,
     up, down, left, right,
     Coord(..),
