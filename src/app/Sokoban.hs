@@ -7,11 +7,11 @@ module Sokoban (
     user, boxes, walls, targets,
     getUser, getBoxes, getTargets, getWall,getScore, getNumTarget,getSteps,getTimer,updateTimer,
     getMenuStatus, updateMenuStatus, getGameMode,updateGameMode, getHoles, getFragiles, getIces,
-    getBoxIdx,
-    step, checkSuccess,haltTimer,startTimer,
+    getBoxIdx, getDead,getDoor, getSwitch,getRail, getRailEnEx,
+    step,step_, checkSuccess,haltTimer,startTimer, getMapIdx,updateMapIdx,
     up, down, left, right,
     Coord(..),
-    nextPos, Game(Game), Direction, checkOnTarget,GameMode(Single,Multi)
+    nextPos, Game(Game), Direction, checkOnTarget,GameMode(Single,Multi), UIState(MainMenu, MapSelection, GamePlay)
 ) where
 
 import Prelude hiding (Left, Right)
@@ -40,6 +40,11 @@ data Game = Game {
     _doors        :: Seq Coord,     
     _switch       :: Coord,         
     _switchState  :: Bool,
+
+    -- rail
+    _rail :: Seq Coord,
+    _railEnEx :: Seq Coord,
+    -- _inRail :: Bool, 
     
     -- states
     _dir     :: Direction,
@@ -56,11 +61,14 @@ data Game = Game {
     _timer_running   :: Bool,
 
     -- menu related
-    _in_menu :: Bool,
-    _game_mode :: GameMode
+    _ui_state :: UIState,
+    _game_mode :: GameMode,
+    _map_idx :: Int
 } deriving (Show)
 
 data GameMode = Single | Multi deriving (Show,Eq)
+
+data UIState = MainMenu | MapSelection | GamePlay deriving (Eq, Show)
 
 type Coord = V2 Int
 
@@ -68,6 +76,7 @@ type IndexMap = M.Map String (Seq Int)
 
 
 data Direction = Up | Down | Left | Right deriving (Show, Eq)
+
 
 makeLenses ''Game
 
@@ -96,54 +105,116 @@ num_targets = 1
 
 -- only one category for box
 
-idx1 = S.fromList([0])
+-- idx1 = S.fromList([0])
+-- b1 :: Game
+-- b1 = Game
+--         { _user    = V2 xm ym
+--         , _box     = box'
+--         , _boxes   = boxes'
+--         , _walls   = wall
+--         , _target  = target'
+--         , _targets = targets'
+--         , _dir     = Up
+--         , _score  = 0
+--         , _suceess = False
+--         , _dead    = False
+--         , _num_target = 1
+--         , _boxCat = S.fromList(["targets"])
+--         , _boxIdx = M.singleton "targets" idx1
+--         , _num_steps = 0
+--         , _timer_seconds = 0
+--         , _timer_running = False
+--         , _game_mode = Single
+--         , _ui_state = MainMenu
+--         }
+
+-- idx2 = S.fromList([0,1])
+-- b2 :: Game
+-- b2 = Game
+--         { _user    = V2 xm ym
+--         , _box     = box'
+--         , _boxes   = S.fromList[V2 6 4, V2 6 6]
+--         , _walls   = wall
+--         , _target  = target'
+--         , _targets = S.fromList[V2 6 3, V2 6 7]
+--         , _icefloors = S.fromList [V2 5 4, V2 5 6]
+--         , _fragileFloors = S.fromList [V2 7 5]
+--         , _holes         = S.empty
+--         , _dir     = Up
+--         , _score  = 0
+--         , _suceess = False
+--         , _dead    = False
+--         , _num_target = 2
+--         , _boxCat = S.fromList(["targets"])
+--         , _boxIdx = M.singleton "targets" idx2
+--         , _num_steps = 0
+--         , _timer_seconds = 0
+--         , _timer_running = False
+--         , _game_mode = Single
+--         , _ui_state = MainMenu
+--         }
 b1 :: Game
 b1 = Game
-        { _user    = V2 xm ym
-        , _box     = box'
-        , _boxes   = boxes'
-        , _walls   = wall
-        , _target  = target'
-        , _targets = targets'
-        , _dir     = Up
-        , _score  = 0
-        , _suceess = False
-        , _dead    = False
-        , _num_target = 1
-        , _boxCat = S.fromList(["targets"])
-        , _boxIdx = M.singleton "targets" idx1
-        , _num_steps = 0
-        , _timer_seconds = 0
-        , _timer_running = False
-        , _in_menu = True
-        , _game_mode = Single
-        }
+    { _user = V2 1 1
+    , _box = V2 2 2   
+    , _boxes = S.fromList [V2 2 2]
+    , _walls = S.fromList [V2 0 0, V2 0 1, V2 0 2, V2 1 0, V2 2 0]
+    , _target = V2 3 3  
+    , _targets = S.fromList [V2 3 3]  
+    , _icefloors = S.empty  
+    , _fragileFloors = S.empty 
+    , _holes = S.empty  
+    , _doors = S.empty 
+    , _switch = V2 0 0 
+    , _switchState = False 
+    , _rail = S.empty 
+    , _railEnEx = S.empty 
+    , _dir = Up  
+    , _score = 0  
+    , _suceess = False 
+    , _dead = False 
+    , _num_target = 1 
+    , _boxCat = S.fromList ["standard"]  
+    , _boxIdx = M.singleton "standard" (S.fromList [0]) 
+    , _num_steps = 0  
+    , _timer_seconds = 0 
+    , _timer_running = False 
+    , _game_mode = Single  
+    , _ui_state = MainMenu  
+    , _map_idx = 0 
+    }
 
-idx2 = S.fromList([0,1])
 b2 :: Game
 b2 = Game
-        { _user    = V2 xm ym
-        , _box     = box'
-        , _boxes   = S.fromList[V2 6 4, V2 6 6]
-        , _walls   = wall
-        , _target  = target'
-        , _targets = S.fromList[V2 6 3, V2 6 7]
-        , _icefloors = S.fromList [V2 5 4, V2 5 6]
-        , _fragileFloors = S.fromList [V2 7 5]
-        , _holes         = S.empty
-        , _dir     = Up
-        , _score  = 0
-        , _suceess = False
-        , _dead    = False
-        , _num_target = 2
-        , _boxCat = S.fromList(["targets"])
-        , _boxIdx = M.singleton "targets" idx2
-        , _num_steps = 0
-        , _timer_seconds = 0
-        , _timer_running = False
-        , _in_menu = True
-        , _game_mode = Single
-        }
+    { _user = V2 1 2  
+    , _box = V2 3 2 
+    , _boxes = S.fromList [V2 3 2, V2 4 3]  
+    , _walls = S.fromList [V2 0 0, V2 0 1, V2 0 2, V2 1 0, V2 2 0, V2 3 0] 
+    , _target = V2 4 4 
+    , _targets = S.fromList [V2 4 4, V2 5 5] 
+    , _icefloors = S.empty 
+    , _fragileFloors = S.empty
+    , _holes = S.empty  
+    , _doors = S.empty 
+    , _switch = V2 0 0  
+    , _switchState = False 
+    , _rail = S.empty 
+    , _railEnEx = S.empty 
+    , _dir = Down  
+    , _score = 0 
+    , _suceess = False 
+    , _dead = False 
+    , _num_target = 2 
+    , _boxCat = S.fromList ["standard"]
+    , _boxIdx = M.singleton "standard" (S.fromList [0, 1])
+    , _num_steps = 0  
+    , _timer_seconds = 0 
+    , _timer_running = False  
+    , _game_mode = Single 
+    , _ui_state = MainMenu 
+    , _map_idx = 1
+    }
+
 
 
 boxidx :: IndexMap
@@ -155,10 +226,9 @@ boxidx = M.insert "red" redidx . M.insert "blue" blueidx $ empty
 idx3 = S.fromList([0,1,2])
 b3 :: Game
 b3 = Game
-        { _user    = V2 xm ym
+        { _user    = V2 3 6
         , _box     = box'
-        , _boxes   = S.fromList[V2 4 5, V2 6 4, V2 6 6, V2 6 2, V2 5 7]
-        -- ,_boxes   = S.fromList[V2 6 6, V2 4 6, V2 5 6, V2 2 3, V2 3 3, V2 4 3]
+        , _boxes   = S.fromList[V2 3 5, V2 6 4, V2 6 6, V2 6 2, V2 5 7]
         , _walls   = wall
         , _target  = target'
         , _targets = S.fromList[V2 3 5, V2 6 3, V2 6 7]
@@ -170,6 +240,11 @@ b3 = Game
         ,_doors        =  S.fromList [V2 5 6]   
         ,_switch       =  V2 7 4       
         ,_switchState  = False
+
+        ,_rail     = S.fromList[V2 3 3, V2 3 4]
+        ,_railEnEx = S.fromList[V2 2 3, V2 4 4]
+        -- ,_inRail = False
+
         , _dir     = Up
         , _score  = 0
         , _suceess = False
@@ -181,8 +256,9 @@ b3 = Game
         , _num_steps = 0
         , _timer_seconds = 0
         , _timer_running = False
-        , _in_menu = True
         , _game_mode = Single
+        , _ui_state = MainMenu
+        , _map_idx = 2
         }
 
 
@@ -230,8 +306,10 @@ isBoxInBoxIdx boxIndex g =
       boxList = S.index (g^.boxes) boxIndex
   in any (elem boxIndex . snd) (M.toList boxIdxMap)
 
-step :: Direction -> Game -> Game
-step d g =
+
+
+step_ :: Direction -> Game -> Game
+step_ d g =
     let nextUserPos = nextPos d (g ^. user)
         isNextWall = findIndex nextUserPos (g ^. walls)
         isNextDoor = findIndex nextUserPos (g ^. doors) /= Nothing && not (g ^. switchState)
@@ -242,6 +320,10 @@ step d g =
         isBoxOnSwitch = isJust (findIndex (g ^. switch) (g ^. boxes))
         isUserOrBoxOnSwitch = isNextSwitch || isBoxOnSwitch
 
+        -- for rail
+        isNextRail = undefined 
+        isNextEnEx = undefined 
+
         updateFragileAndHole pos 
             | isJust (findIndex pos (g ^. fragileFloors)) = 
                 g & fragileFloors %~ S.filter (/= pos)
@@ -250,23 +332,26 @@ step d g =
 
         moveBoxToNextPos boxPos =
             let nextBoxPos = nextPos d boxPos
+                isIceFloor = findIndex nextBoxPos (g ^. icefloors) /= Nothing
                 isNextBoxPosDoor = findIndex nextBoxPos (g ^. doors) /= Nothing && not (g ^. switchState)
                 isNextBoxPosWall = findIndex nextBoxPos (g ^. walls) /= Nothing
                 isNextBoxPosBox = isJust (findIndex nextBoxPos (g ^. boxes))
             in if isNextBoxPosWall || isNextBoxPosDoor || isNextBoxPosBox
-               then boxPos
-               else nextBoxPos
+            then boxPos
+            else if isIceFloor
+                    then moveBoxToNextPos nextBoxPos
+                    else nextBoxPos
 
         isAnyBoxOnSwitch = any (\boxPos -> boxPos == (g ^. switch)) (toList (g ^. boxes))
         isSwitchActive = (g ^. user) == (g ^. switch) || isAnyBoxOnSwitch
 
     in case (isNextWall, isNextDoor) of
-        (Just _, _) -> g -- User cannot move into a wall
-        (_, True) -> g -- User cannot move into a closed door
+        (Just _, _) -> g   -- User cannot move into a wall
+        (_, True) -> g     -- User cannot move into a closed door
         _ ->
             case (isNextBox, isNextHole) of
                 (Just boxIndex, _) ->
-                    let nextBoxPos = nextUserPos
+                    let nextBoxPos = nextUserPos 
                         finalBoxPos = moveBoxToNextPos nextBoxPos
                         isNextNextWall = findIndex finalBoxPos (g ^. walls)
                         isNextNextBox = findIndex finalBoxPos (g ^. boxes)
@@ -295,7 +380,62 @@ step d g =
                 (Nothing, _) ->
                     let g' = updateFragileAndHole nextUserPos
                     in g' & user .~ nextUserPos
-                          & switchState .~ isSwitchActive
+                          & switchState .~ isSwitchActive 
+
+
+step :: Direction -> Game -> Game
+step d g =
+    let nextUserPos = nextPos d (g ^. user) 
+        isNextWall = findIndex nextUserPos (g ^. walls)
+        isNextBox = findIndex nextUserPos (g ^. boxes)
+    in
+        case isNextBox of
+            Nothing ->
+                case isNextWall of
+                    Nothing ->
+                        -- move
+                        step_ d g
+                    Just _ ->
+                        g
+            Just nextBoxIndex -> -- the index of the box
+                -- handle collision with box
+                let nextBoxPos = nextUserPos
+                    nextNextBoxPos = nextPos d nextBoxPos
+                    isNextNextWall = findIndex nextNextBoxPos (g ^. walls)
+                    isNextNextBox = findIndex nextNextBoxPos (g ^. boxes)
+                    isNextNextTarget = findIndex nextNextBoxPos (g ^. targets)
+                in
+                    case (isNextNextWall, isNextNextBox ) of
+                        (Just _, _)  -> g 
+                        (_ , Just _) -> g 
+                        (Nothing, Nothing) ->
+                            -- move user, move box
+                            let nextUserPos = nextPos d (g ^. user)
+                                boxPos  = nextUserPos 
+                                nextBoxPos = nextPos d boxPos
+                                isNextBox = findIndex nextUserPos (g ^. boxes)
+                            in
+                                case isNextBox of 
+                                    Just nextBoxIndex -> 
+                                        case ( (elem boxPos (g^. rail)),
+                                            (elem nextBoxPos (g^. rail)),
+                                            (elem nextBoxPos (g^. railEnEx)) )of 
+                                            (True, True, _) -> 
+                                                g & user .~ nextUserPos
+                                                & boxes .~ (update nextBoxIndex nextBoxPos (g ^. boxes))
+                                            (True, _, True) -> 
+                                                step_ d g
+                                            (True, False, False) -> g
+                                            
+                                            (False, _, _) -> 
+
+                                                case ((elem boxPos (g^. railEnEx)), 
+                                                    (elem nextBoxPos (g^. rail))  ) of 
+                                                    (True, _) -> 
+                                                        step_ d g
+                                                    (False, True)  -> g 
+                                                    (False, False) -> 
+                                                        step_ d g
 
 -- Getters and Setters
 getUser :: Game -> Coord
@@ -322,6 +462,9 @@ getIces g = g^. icefloors
 getNumTarget :: Game -> Int
 getNumTarget g = g^. num_target
 
+getDead :: Game -> Bool
+getDead g = g^. dead
+
 getScore :: Game -> Int
 getScore g = let boxesOnTargets = checkOnTarget (getBoxes g) (getTargets g)
                 in length $ filter id $ toList boxesOnTargets
@@ -332,23 +475,44 @@ getBoxCat g = g^. boxCat
 getBoxIdx :: Game -> IndexMap 
 getBoxIdx g = g^.boxIdx
 
+getRail :: Game -> Seq Coord
+getRail g = g^. rail 
+
+getRailEnEx :: Game -> Seq Coord 
+getRailEnEx g = g^. railEnEx 
+
+getDoor :: Game -> Seq Coord 
+getDoor g = g^. doors
+
+getSwitch :: Game -> Coord
+getSwitch g = g^. switch
+
+-- getInRail :: Game -> Bool 
+-- getInRail g = g^.inRail
+
 getSteps :: Game -> Int
 getSteps g = g^. num_steps
 
 getTimer :: Game -> Int
 getTimer g = g^. timer_seconds
 
-getMenuStatus :: Game -> Bool
-getMenuStatus g = g^. in_menu
+getMenuStatus :: Game -> UIState
+getMenuStatus g = g^. ui_state
 
-updateMenuStatus :: Game -> Bool -> Game
-updateMenuStatus g status = g & in_menu .~ status
+updateMenuStatus :: Game -> UIState -> Game
+updateMenuStatus g status = g & ui_state .~ status
 
 getGameMode :: Game -> GameMode
 getGameMode g = g^. game_mode
 
 updateGameMode :: Game -> GameMode -> Game
 updateGameMode g mode = g & game_mode .~ mode
+
+getMapIdx :: Game -> Int
+getMapIdx g = g^. map_idx
+
+updateMapIdx :: Game -> Int -> Game
+updateMapIdx g idx = g & map_idx .~ idx
 
 updateTimer :: Game -> Game
 updateTimer g = if g ^. timer_running 
