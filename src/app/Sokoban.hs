@@ -332,12 +332,15 @@ step_ d g =
 
         moveBoxToNextPos boxPos =
             let nextBoxPos = nextPos d boxPos
+                isIceFloor = findIndex nextBoxPos (g ^. icefloors) /= Nothing
                 isNextBoxPosDoor = findIndex nextBoxPos (g ^. doors) /= Nothing && not (g ^. switchState)
                 isNextBoxPosWall = findIndex nextBoxPos (g ^. walls) /= Nothing
                 isNextBoxPosBox = isJust (findIndex nextBoxPos (g ^. boxes))
             in if isNextBoxPosWall || isNextBoxPosDoor || isNextBoxPosBox
-               then boxPos
-               else nextBoxPos
+            then boxPos
+            else if isIceFloor
+                    then moveBoxToNextPos nextBoxPos
+                    else nextBoxPos
 
         isAnyBoxOnSwitch = any (\boxPos -> boxPos == (g ^. switch)) (toList (g ^. boxes))
         isSwitchActive = (g ^. user) == (g ^. switch) || isAnyBoxOnSwitch
