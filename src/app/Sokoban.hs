@@ -316,9 +316,6 @@ step_ d g =
         isBoxOnSwitch = isJust (findIndex (g ^. switch) (g ^. boxes))
         isUserOrBoxOnSwitch = isNextSwitch || isBoxOnSwitch
 
-        -- for rail
-        isNextRail = undefined 
-        isNextEnEx = undefined 
 
         updateFragileAndHole pos 
             | isJust (findIndex pos (g ^. fragileFloors)) = 
@@ -550,10 +547,6 @@ right = Right
 
 
 
-
-
-
-
 classicBox :: Game
 classicBox = Game
         { _user    = V2 3 3
@@ -662,3 +655,13 @@ railBox = Game
         , _boxIdx = M.insert "red" (S.fromList [0]) $ M.empty
         , _num_steps = 0
         }
+
+
+
+
+
+
+
+
+
+
