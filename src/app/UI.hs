@@ -73,7 +73,7 @@ startTicking delay channel = forkIO $ forever $ do
 
 -- Unicode related definitions
 userFigure :: String
-userFigure = " ♀️ "
+userFigure = " ♀ "
 
 boxFigure :: String
 boxFigure = " ▣ "
@@ -93,7 +93,7 @@ iceFigure :: String
 iceFigure = " ❄️ "
 
 doorFigure :: String
-doorFigure = " █ "
+doorFigure = " ⌻ "
 
 switchFigure :: String
 switchFigure = " ● "
