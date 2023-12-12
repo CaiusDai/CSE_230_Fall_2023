@@ -128,19 +128,6 @@ drawUI a = case getMenuStatus a of
             GamePlay ->  drawGamePlay a
 
 
-drawMultiPlayer :: AppState -> [Widget ()]
-drawMultiPlayer a = [center
-                    $ withBorderStyle BS.unicode
-                    $ borderWithLabel (str " Sokoban Game - Multiplayer ")
-                    $ hLimit 180 $ vLimit 40 
-                    $ vBox [ hBox [ vBox [ padRight (Pad 2) (drawScore (getGame1 a) (getTimer a))
-                                        , drawGame (getGame1 a) ]
-                                  , padLeft (Pad 4) $ padRight (Pad 4) (vBox [ drawScore (getGame2 a) (getTimer a)
-                                                                              , drawGame (getGame2 a) ])
-                                  ]
-                           , padTop (Pad 1) drawHelp
-                          ]]
-
 drawGamePlay :: AppState -> [Widget ()]
 drawGamePlay a = case getGameMode a of
                     Single -> drawSinglePlayer a
@@ -152,7 +139,21 @@ drawSinglePlayer a = [center
                     $ withBorderStyle BS.unicode
                     $ borderWithLabel (str " Sokoban Game ")
                     $ hLimit 80 $ vLimit 30
-                    $ hBox [padRight (Pad 2) (drawScore (getGame1 a) (getTimer a)), drawGame (getGame1 a), padLeft (Pad 2) drawHelp]]
+                    $ hBox [padRight (Pad 2) (drawScore (getGame1 a) (getTimer a)), drawGame (getGame1 a), padLeft (Pad 2) ((drawHelp Single))]]
+
+
+drawMultiPlayer :: AppState -> [Widget ()]
+drawMultiPlayer a = [center
+                    $ withBorderStyle BS.unicode
+                    $ borderWithLabel (str " Sokoban Game - Multiplayer ")
+                    $ hLimit 180 $ vLimit 40 
+                    $ vBox [ hBox [ vBox [ padRight (Pad 2) (drawScore (getGame1 a) (getTimer a))
+                                        , drawGame (getGame1 a) ]
+                                  , padLeft (Pad 4) $ padRight (Pad 4) (vBox [ drawScore (getGame2 a) (getTimer a)
+                                                                              , drawGame (getGame2 a) ])
+                                  ]
+                           , padTop (Pad 1) (drawHelp Multi)
+                          ]]
 
 drawMainMenu :: AppState -> [Widget n]
 drawMainMenu a = [ vBox [ drawTitle
@@ -208,19 +209,35 @@ formatTime totalSeconds = printf "%02d:%02d" minutes seconds
   where
     (minutes, seconds) = totalSeconds `divMod` 60
 
-drawHelp :: Widget ()
-drawHelp = withBorderStyle BS.unicode
-            $ borderWithLabel (str " Help ")
-            $ padAll 2
-            $ vBox [ str "Controls:"
-                   , str " W - Move Up"
-                   , str " S - Move Down"
-                   , str " A - Move Left"
-                   , str " D - Move Right"
-                   , str " Q - Quit Game"
-                   , str " R - Restart Game"
-                   , str "Arrow keys also work"
-                   ]
+drawHelp :: GameMode -> Widget ()
+drawHelp gameMode = withBorderStyle BS.unicode
+                    $ borderWithLabel (str " Help ")
+                    $ padAll 2
+                    $ vBox controls
+  where
+    controls = case gameMode of
+                 Single -> [ str "Controls for Player:"
+                           , str " W - Move Up"
+                           , str " S - Move Down"
+                           , str " A - Move Left"
+                           , str " D - Move Right"
+                           , str " Q - Quit Game"
+                           , str " R - Restart Game"
+                           ]
+                 Multi  -> [ str " Q - Quit Game"
+                           , str " R - Restart Game"
+                           , str "Controls for Player 1:"
+                           , str " W - Move Up"
+                           , str " S - Move Down"
+                           , str " A - Move Left"
+                           , str " D - Move Right"
+                           , str "Controls for Player 2:"
+                           , str " ↑ - Move Up"
+                           , str " ↓ - Move Down"
+                           , str " ← - Move Left"
+                           , str " → - Move Right"
+                           ]
+
 
 drawGame :: Game -> Widget ()
 drawGame gs
@@ -339,11 +356,11 @@ handleEvent (VtyEvent (EvKey key [])) = do
         KEnter -> put $ startTimer $ updateMenuStatus (updateGame2 (updateGame1 as (loadMap (getMapIdx as))) (loadMap (getMapIdx as))) GamePlay
         KChar 'q' -> halt
         _         -> return ()
-    else if isGameSuccessful (getGame1 as) || isGameFailed (getGame1 as)
-    then case key of
-        KChar 'r' -> restartGame
-        KChar 'q' -> halt
-        _         -> return ()
+    -- else if isGameSuccessful (getGame1 as) || isGameFailed (getGame1 as)
+    -- then case key of
+    --     KChar 'r' -> restartGame
+    --     KChar 'q' -> halt
+    --     _         -> return ()
     else if getGameMode as == Single
     then case key of
         KChar 'w' -> movePlayer1 up
@@ -384,22 +401,28 @@ movePlayer1 direction = do
     as <- get
     let gs = getGame1 as
     let gs' = step direction gs
-    if isGameSuccessful gs'
-    then put $ haltTimer as
-    else do
-        let updatedAppState = updateGame1 as gs'
-        put updatedAppState
+    -- if isGameSuccessful gs'
+    -- then do
+    --     let updatedAppState = updateGame1 as gs'  
+    --     put $ haltTimer updatedAppState           
+    -- else do
+    let updatedAppState = updateGame1 as gs'
+    put updatedAppState
+
 
 movePlayer2 :: So.Direction -> EventM () AppState ()
 movePlayer2 direction = do
     as <- get
     let gs = getGame2 as
     let gs' = step direction gs
-    if isGameSuccessful gs'
-    then put $ haltTimer as
-    else do
-        let updatedAppState = updateGame2 as gs'
-        put updatedAppState
+    -- if isGameSuccessful gs'
+    -- then do
+    --     let updatedAppState = updateGame2 as gs'  
+    --     put $ haltTimer updatedAppState           
+    -- else do
+    let updatedAppState = updateGame2 as gs'
+    put updatedAppState
+
 
 
 restartGame :: EventM () AppState ()
@@ -429,6 +452,4 @@ title = hBox [ padRight (Pad 2) $ drawAscii asciiS,
                padRight (Pad 2) $ drawAscii asciiB,
                padRight (Pad 2) $ drawAscii asciiA,
                padRight (Pad 2) $ drawAscii asciiN ]
-
-
 
