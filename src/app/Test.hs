@@ -12,9 +12,6 @@ import Data.Maybe (isJust)
 import qualified Data.List as L
 
 
-main :: IO()
-main = putStrLn "Test.hs"
-
 -- -- allCheckTest :: [Bool] 
 
 trueCounter :: [Bool]->Int 
@@ -43,7 +40,6 @@ stepTest move ls g0 = foldr move g0 ls'
 insns1    = [up,down,left,right,right,left,down] 
 success1  = checkSuccess (stepTest step insns1 classicBox )
 
-
 -- -- mordenBoxCheck 
 insns2 = [up, right, up,left, down, down, down, left, down, right]
 success2 = checkSuccess (stepTest step insns2 mordenBox)
@@ -54,13 +50,21 @@ success3 = checkSuccess (stepTest step insns3 wildCardBox)
 
 -- -- railBoxCheck
 insns4 = [right, down, left, down, right, up, right, down, down, down, left, down, right, up, right, down]
-success4 = checkSuccess (stepTest step insns3 wildCardBox)
+success4 = checkSuccess (stepTest step insns3 railBox)
 
 
+
+testCases = [(insns1, classicBox),
+             (insns2, mordenBox),
+             (insns3, wildCardBox),
+             (insns4, railBox)]
+finalGame = map (\(insn,game)-> stepTest step insn game) testCases
+
+checkTestCases = map checkSuccess finalGame 
 
 main :: IO ()
 main = do 
-    putStrLn ("pass test case: " ++ show (trueCounter test) ++ "/" ++ show (length test))
+    putStrLn ("pass test case: " ++ show (trueCounter checkTestCases) ++ "/" ++ show (length checkTestCases))
 
 
 
