@@ -102,10 +102,10 @@ initialState :: AppState
 initialState = appState
 
 allMaps :: [Game]
-allMaps = [b1, b2, b3]
+allMaps = [b1, b2, b3, classicBox, mordenBox, wildCardBox, railBox]
 
 mapNames :: [String]
-mapNames = ["Map 1","Map 2","Map 3"]
+mapNames = ["Map 1","Map 2","Map 3", "classicBox", "mordenBox", "wildCardBox", "railBox"]
 
 -- App: Entry of UI
 app :: App AppState TimerEvent ()
