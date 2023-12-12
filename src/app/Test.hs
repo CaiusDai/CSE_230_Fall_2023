@@ -13,7 +13,6 @@ import qualified Data.List as L
 
 
 -- -- allCheckTest :: [Bool] 
-
 trueCounter :: [Bool]->Int 
 trueCounter [] = 0
 trueCounter (x:xs) = 
@@ -53,18 +52,26 @@ insns4 = [right, down, left, down, right, up, right, down, down, down, left, dow
 success4 = checkSuccess (stepTest step insns3 railBox)
 
 
-
 testCases = [(insns1, classicBox),
              (insns2, mordenBox),
              (insns3, wildCardBox),
              (insns4, railBox)]
+
+grndTruth = [True, True, True, True]
+
 finalGame = map (\(insn,game)-> stepTest step insn game) testCases
 
-checkTestCases = map checkSuccess finalGame 
+checkSuccessCases = map checkSuccess finalGame 
+
+checkTestCases ls1 ls2 = case (ls1,ls2) of  
+    (x1:xs1, x2:xs2) -> (x1 == x2) : checkTestCases xs1 xs2 
+    (_,_) -> []
+
+result = checkTestCases checkSuccessCases grndTruth
 
 main :: IO ()
 main = do 
-    putStrLn ("pass test case: " ++ show (trueCounter checkTestCases) ++ "/" ++ show (length checkTestCases))
+    putStrLn ("pass test case: " ++ show (trueCounter result) ++ "/" ++ show (length result))
 
 
 
