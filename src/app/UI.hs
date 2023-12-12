@@ -90,7 +90,7 @@ fragileFigure :: String
 fragileFigure = " ⚠️ "
 
 iceFigure :: String
-iceFigure = " ❄️ " 
+iceFigure = " ❄️ "
 
 doorFigure :: String
 doorFigure = " █ "
@@ -101,8 +101,8 @@ switchFigure = " ● "
 railFigure :: String
 railFigure = " # "
 
-initialState :: Game
-initialState = loadMap 2
+initialState :: AppState
+initialState = appState
 
 allMaps :: [Game]
 allMaps = [b1, b2, b3]
@@ -111,34 +111,52 @@ mapNames :: [String]
 mapNames = ["Map 1","Map 2","Map 3"]
 
 -- App: Entry of UI
-app :: App Game TimerEvent ()
+app :: App AppState TimerEvent ()
 app = App { appDraw = drawUI
           , appChooseCursor = showFirstCursor
           , appHandleEvent = handleEvent
           , appStartEvent = pure ()
-          , appAttrMap = const theMap   -- Empty for now
+          , appAttrMap = const theMap
           }
 
 
 -- -- App required functions
-drawUI :: Game -> [Widget ()]
-drawUI g = case getMenuStatus g of
-            MainMenu -> drawMainMenu g
-            MapSelection ->  drawMapSelection g
-            GamePlay ->  drawGamePlay g
+drawUI :: AppState -> [Widget ()]
+drawUI a = case getMenuStatus a of
+            MainMenu -> drawMainMenu a
+            MapSelection ->  drawMapSelection a
+            GamePlay ->  drawGamePlay a
 
 
-drawGamePlay :: Game -> [Widget ()]
-drawGamePlay g = [center
+drawMultiPlayer :: AppState -> [Widget ()]
+drawMultiPlayer a = [center
+                    $ withBorderStyle BS.unicode
+                    $ borderWithLabel (str " Sokoban Game - Multiplayer ")
+                    $ hLimit 180 $ vLimit 40 
+                    $ vBox [ hBox [ vBox [ padRight (Pad 2) (drawScore (getGame1 a) (getTimer a))
+                                        , drawGame (getGame1 a) ]
+                                  , padLeft (Pad 4) $ padRight (Pad 4) (vBox [ drawScore (getGame2 a) (getTimer a)
+                                                                              , drawGame (getGame2 a) ])
+                                  ]
+                           , padTop (Pad 1) drawHelp
+                          ]]
+
+drawGamePlay :: AppState -> [Widget ()]
+drawGamePlay a = case getGameMode a of
+                    Single -> drawSinglePlayer a
+                    Multi  -> drawMultiPlayer a
+
+
+drawSinglePlayer :: AppState -> [Widget ()]
+drawSinglePlayer a = [center
                     $ withBorderStyle BS.unicode
                     $ borderWithLabel (str " Sokoban Game ")
                     $ hLimit 80 $ vLimit 30
-                    $ hBox [padRight (Pad 2) (drawScore g), drawGame g, padLeft (Pad 2) drawHelp]]
+                    $ hBox [padRight (Pad 2) (drawScore (getGame1 a) (getTimer a)), drawGame (getGame1 a), padLeft (Pad 2) drawHelp]]
 
-
-drawMainMenu :: Game -> [Widget n]
-drawMainMenu gs = [ vBox [ drawTitle
-                              , padTop (Pad 1) $ drawGameMode $ getGameMode gs
+drawMainMenu :: AppState -> [Widget n]
+drawMainMenu a = [ vBox [ drawTitle
+                              , padTop (Pad 1) $ drawGameMode $ getGameMode a
                               ]]
 
 drawTitle :: Widget n
@@ -157,11 +175,11 @@ selectable True  w = withAttr selectedAttr . hCenter $ str $ " >> " ++ w
 selectable False w = withAttr normalAttr . hCenter $ str $ "    " ++ w
 
 
-drawMapSelection :: Game -> [Widget ()]
-drawMapSelection g = [center $ vBox (titleWidget : mapSelectionWidgets)]
+drawMapSelection :: AppState -> [Widget ()]
+drawMapSelection a = [center $ vBox (titleWidget : mapSelectionWidgets)]
   where
     titleWidget = withAttr titleAttr $ str "Select Map"
-    mapSelectionWidgets = zipWith (drawMapOption (getMapIdx g)) [0..] mapNames
+    mapSelectionWidgets = zipWith (drawMapOption (getMapIdx a)) [0..] mapNames
 
     drawMapOption :: Int -> Int -> String -> Widget ()
     drawMapOption currentIndex idx mapName =
@@ -171,14 +189,14 @@ drawMapSelection g = [center $ vBox (titleWidget : mapSelectionWidgets)]
 
 
 
-drawScore :: Game -> Widget ()
-drawScore g = withBorderStyle BS.unicode
+drawScore :: Game -> Int -> Widget ()
+drawScore g t = withBorderStyle BS.unicode
                 $ border
                 $ padAll 2
                 $ hLimit 20
                 $ vBox [ str "Score: " <+> str score <+> str "/" <+> str total
                        , str "Steps: " <+> str steps
-                       , str $ formatTime $ getTimer g
+                       , str $ formatTime t
                        ]
                 where
                     score = show (getScore g)
@@ -297,7 +315,7 @@ theMap = attrMap V.defAttr
     ]
 
 
-handleEvent :: BrickEvent () TimerEvent -> EventM () Game ()
+handleEvent :: BrickEvent () TimerEvent -> EventM () AppState ()
 -- Handle Timer Events
 handleEvent (AppEvent Tick) = do
     gs <- get
@@ -306,75 +324,86 @@ handleEvent (AppEvent Tick) = do
 
 -- Handle Key press Events
 handleEvent (VtyEvent (EvKey key [])) = do
-    gs <- get
-    if getMenuStatus gs == MainMenu
+    as <- get
+    if getMenuStatus as == MainMenu
     then case key of
-        KChar 'w' -> put $ updateGameMode gs Single
-        KChar 's' -> put $ updateGameMode gs Multi
-        KEnter    -> put $ updateMenuStatus gs MapSelection
+        KChar 'w' -> put $ updateGameMode as Single
+        KChar 's' -> put $ updateGameMode as Multi
+        KEnter    -> put $ updateMenuStatus as MapSelection
         KChar 'q' -> halt
         _         -> return ()
-    else if getMenuStatus gs == MapSelection
+    else if getMenuStatus as == MapSelection
     then case key of
-        KChar 'w' -> moveSelection Up gs
-        KChar 's' -> moveSelection Down gs
-        KEnter     -> put $ startTimer $ updateMenuStatus (loadMap (getMapIdx gs)) GamePlay
+        KChar 'w' -> moveSelection Up as
+        KChar 's' -> moveSelection Down as
+        KEnter -> put $ startTimer $ updateMenuStatus (updateGame2 (updateGame1 as (loadMap (getMapIdx as))) (loadMap (getMapIdx as))) GamePlay
         KChar 'q' -> halt
         _         -> return ()
-    else if isGameSuccessful gs || isGameFailed gs
+    else if isGameSuccessful (getGame1 as) || isGameFailed (getGame1 as)
     then case key of
         KChar 'r' -> restartGame
         KChar 'q' -> halt
         _         -> return ()
+    else if getGameMode as == Single
+    then case key of
+        KChar 'w' -> movePlayer1 up
+        KChar 's' -> movePlayer1 down
+        KChar 'a' -> movePlayer1 left
+        KChar 'd' -> movePlayer1 right
+        KChar 'r' -> restartGame
+        KChar 'q' -> halt
+        _         -> return ()
     else case key of
-        KChar 'w' -> movePlayer up
-        KChar 's' -> movePlayer down
-        KChar 'a' -> movePlayer left
-        KChar 'd' -> movePlayer right
-        KUp       -> movePlayer up
-        KDown     -> movePlayer down
-        KLeft     -> movePlayer left
-        KRight    -> movePlayer right
+        KChar 'w' -> movePlayer1 up
+        KChar 's' -> movePlayer1 down
+        KChar 'a' -> movePlayer1 left
+        KChar 'd' -> movePlayer1 right
+        KUp       -> movePlayer2 up
+        KDown     -> movePlayer2 down
+        KLeft     -> movePlayer2 left
+        KRight    -> movePlayer2 right
         KChar 'r' -> restartGame
         KChar 'q' -> halt
         _         -> return ()
 handleEvent _ = return ()
 
 
-moveSelection :: Brick.Direction -> Game -> EventM () Game ()
-moveSelection dir gs = do
-    let idx = getMapIdx gs
+moveSelection :: Brick.Direction -> AppState -> EventM () AppState ()
+moveSelection dir as = do
+    let idx = getMapIdx as
     let newIdx = if dir == Up then max 0 (idx - 1) else min (length mapNames - 1) (idx + 1)
-    put $ updateMapIdx gs newIdx
+    put $ updateMapIdx as newIdx
 
 
 loadMap :: Int -> Game
 loadMap idx = allMaps !! idx
 
 
-movePlayer :: So.Direction -> EventM () Game ()
-movePlayer direction  = do
-    gs <- get
+movePlayer1 :: So.Direction -> EventM () AppState ()
+movePlayer1 direction = do
+    as <- get
+    let gs = getGame1 as
     let gs' = step direction gs
     if isGameSuccessful gs'
-    then put $ haltTimer gs'
-    else put gs'
+    then put $ haltTimer as
+    else do
+        let updatedAppState = updateGame1 as gs'
+        put updatedAppState
 
-restartGame :: EventM () Game ()
-restartGame = do
-    gs <- get
-    let currentMapIdx = getMapIdx gs
-    let currentGameMode = getGameMode gs
-    let currentUIState = getMenuStatus gs
-
-    let resetGameState = loadMap currentMapIdx
-    let updatedGameModeState = updateGameMode resetGameState currentGameMode
-    let updatedUIState = updateMenuStatus updatedGameModeState currentUIState
-    let finalState = startTimer updatedUIState
-
-    put finalState
+movePlayer2 :: So.Direction -> EventM () AppState ()
+movePlayer2 direction = do
+    as <- get
+    let gs = getGame2 as
+    let gs' = step direction gs
+    if isGameSuccessful gs'
+    then put $ haltTimer as
+    else do
+        let updatedAppState = updateGame2 as gs'
+        put updatedAppState
 
 
+restartGame :: EventM () AppState ()
+restartGame = put initialState
 
 -- Constants for the game board size and positions
 boardSize :: Int

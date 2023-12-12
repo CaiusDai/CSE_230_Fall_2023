@@ -3,14 +3,14 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Sokoban (
-    b1, b2, b3,
-    user, boxes, walls, targets,
+    b1, b2, b3, appState,
     getUser, getBoxes, getTargets, getWall,getScore, getNumTarget,getSteps,getTimer,updateTimer,
     getMenuStatus, updateMenuStatus, getGameMode,updateGameMode, getHoles, getFragiles, getIces,
-    getBoxIdx, getDead,getDoor, getSwitch,getRail, getRailEnEx,
+    getBoxIdx, getDead,getDoor, getSwitch,getRail, getRailEnEx, getGame1, getGame2,updateGame1, updateGame2,
     step,step_, checkSuccess,haltTimer,startTimer, getMapIdx,updateMapIdx,
     up, down, left, right,
     Coord(..),
+    AppState(AppState),
     nextPos, Game(Game), Direction, checkOnTarget,GameMode(Single,Multi), UIState(MainMenu, MapSelection, GamePlay)
 ) where
 
@@ -24,6 +24,18 @@ import Data.Foldable (toList,length)
 import Data.Maybe (isJust)
 
 import qualified Data.Map as M
+
+
+data AppState = AppState {
+    _timer_seconds   :: Int,
+    _timer_running   :: Bool,
+    _ui_state :: UIState,
+    _game_mode :: GameMode,
+    _map_idx :: Int,
+
+    _game_1 :: Game,
+    _game_2 :: Game
+} deriving (Show)
 
 
 data Game = Game {
@@ -56,14 +68,7 @@ data Game = Game {
     -- boxes update
     _boxCat  :: Seq String,
     _boxIdx  :: IndexMap,
-    _num_steps:: Int,
-    _timer_seconds   :: Int,
-    _timer_running   :: Bool,
-
-    -- menu related
-    _ui_state :: UIState,
-    _game_mode :: GameMode,
-    _map_idx :: Int
+    _num_steps:: Int
 } deriving (Show)
 
 data GameMode = Single | Multi deriving (Show,Eq)
@@ -79,6 +84,7 @@ data Direction = Up | Down | Left | Right deriving (Show, Eq)
 
 
 makeLenses ''Game
+makeLenses ''AppState
 
 -- next pos of user
 nextPos :: Direction -> Coord -> Coord
@@ -177,11 +183,6 @@ b1 = Game
     , _boxCat = S.fromList ["standard"]  
     , _boxIdx = M.singleton "standard" (S.fromList [0]) 
     , _num_steps = 0  
-    , _timer_seconds = 0 
-    , _timer_running = False 
-    , _game_mode = Single  
-    , _ui_state = MainMenu  
-    , _map_idx = 0 
     }
 
 b2 :: Game
@@ -208,12 +209,7 @@ b2 = Game
     , _boxCat = S.fromList ["standard"]
     , _boxIdx = M.singleton "standard" (S.fromList [0, 1])
     , _num_steps = 0  
-    , _timer_seconds = 0 
-    , _timer_running = False  
-    , _game_mode = Single 
-    , _ui_state = MainMenu 
-    , _map_idx = 1
-    }
+}
 
 
 
@@ -254,12 +250,20 @@ b3 = Game
         , _boxCat = S.fromList(["red","blue"])
         , _boxIdx = boxidx
         , _num_steps = 0
-        , _timer_seconds = 0
-        , _timer_running = False
-        , _game_mode = Single
-        , _ui_state = MainMenu
-        , _map_idx = 2
         }
+
+
+appState :: AppState
+appState = AppState {
+    _timer_seconds = 0,
+    _timer_running = False,
+    _ui_state = MainMenu,
+    _game_mode = Single,
+    _map_idx = 2,
+
+    _game_1 = b3,
+    _game_2 = b3
+}
 
 
 findIndex :: Coord -> Seq Coord -> Maybe Int
@@ -493,37 +497,51 @@ getSwitch g = g^. switch
 getSteps :: Game -> Int
 getSteps g = g^. num_steps
 
-getTimer :: Game -> Int
-getTimer g = g^. timer_seconds
+getTimer :: AppState -> Int
+getTimer a = a^. timer_seconds
 
-getMenuStatus :: Game -> UIState
-getMenuStatus g = g^. ui_state
+getMenuStatus :: AppState -> UIState
+getMenuStatus a = a^. ui_state
 
-updateMenuStatus :: Game -> UIState -> Game
-updateMenuStatus g status = g & ui_state .~ status
+updateMenuStatus :: AppState -> UIState -> AppState
+updateMenuStatus a status = a & ui_state .~ status
 
-getGameMode :: Game -> GameMode
-getGameMode g = g^. game_mode
+getGameMode :: AppState -> GameMode
+getGameMode a = a^. game_mode
 
-updateGameMode :: Game -> GameMode -> Game
-updateGameMode g mode = g & game_mode .~ mode
+updateGameMode :: AppState -> GameMode -> AppState
+updateGameMode a mode = a & game_mode .~ mode
 
-getMapIdx :: Game -> Int
-getMapIdx g = g^. map_idx
+getMapIdx :: AppState -> Int
+getMapIdx a = a^. map_idx
 
-updateMapIdx :: Game -> Int -> Game
-updateMapIdx g idx = g & map_idx .~ idx
+updateMapIdx :: AppState -> Int -> AppState
+updateMapIdx a idx = a & map_idx .~ idx
 
-updateTimer :: Game -> Game
-updateTimer g = if g ^. timer_running 
-                then g & timer_seconds .~ (g ^. timer_seconds + 1)
-                else g
+updateTimer :: AppState -> AppState
+updateTimer a = if a ^. timer_running 
+                then a & timer_seconds .~ (a ^. timer_seconds + 1)
+                else a
 
-haltTimer :: Game -> Game
-haltTimer g = g & timer_running .~ False
+haltTimer :: AppState -> AppState
+haltTimer a = a & timer_running .~ False
 
-startTimer :: Game -> Game
-startTimer g = g & timer_running .~ True
+startTimer :: AppState -> AppState
+startTimer a = a & timer_running .~ True
+
+getGame1 :: AppState -> Game
+getGame1 a = a^. game_1
+
+getGame2 :: AppState -> Game
+getGame2 a = a^. game_2
+
+updateGame1 :: AppState -> Game -> AppState
+updateGame1 a g = a & game_1 .~ g
+
+updateGame2 :: AppState -> Game -> AppState
+updateGame2 a g = a & game_2 .~ g
+
+
 up :: Direction 
 up = Up 
 
