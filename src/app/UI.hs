@@ -98,9 +98,6 @@ doorFigure = " █ "
 switchFigure :: String
 switchFigure = " ● "
 
-railFigure :: String
-railFigure = " # "
-
 initialState :: AppState
 initialState = appState
 
@@ -257,7 +254,7 @@ drawGame gs
     redTargetPositions = toList $ getColoredTargetPositions "red" gs
     blueTargetPositions = toList $ getColoredTargetPositions "blue" gs
     doorPositions = toList (getDoor gs)
-    railPositions = toList (getRail gs) ++ toList (getRailEnEx gs)
+    railPositions = getRail gs
 
     cell pos
         | pos == getUser gs = withAttr playerAttr $ str userFigure
@@ -272,9 +269,10 @@ drawGame gs
         | pos `elem` icePositions = withAttr iceAttr $ str iceFigure
         | pos `elem` fragilePositions = withAttr fragileAttr $ str fragileFigure
         | pos `elem` doorPositions = withAttr doorAttr $ str doorFigure
-        | pos `elem` railPositions = withAttr railAttr $ str railFigure
+        | pos `elem` railPositions = withAttr railAttr $ str (drawRail pos (getRail gs S.>< getRailEnEx gs))
         | pos == getSwitch gs = withAttr switchAttr $ str switchFigure
         | otherwise = str $ replicate 3 ' '
+
 
 getColoredBoxPositions :: String -> Game -> Seq Coord
 getColoredBoxPositions color game =
@@ -291,6 +289,28 @@ getColoredTargetPositions color game =
 
 indices2Seq :: Seq Int -> Seq Coord -> Seq Coord
 indices2Seq indices coords = S.fromList $ map (S.index coords) (toList indices)
+
+
+drawRail :: Coord -> Seq Coord -> [Char]
+drawRail (V2 x y) rails
+    | isCornerTopLeft     = " ╔ " 
+    | isCornerTopRight    = " ╗ "
+    | isCornerBottomLeft  = " ╚ " 
+    | isCornerBottomRight = " ╝ " 
+    | isVerticalLine      = " ║ "
+    | isHorizontalLine    = " ═ "
+    | otherwise           = "   "
+  where
+    hasPoint dx dy = V2 (x + dx) (y + dy) `elem` railsList
+    railsList = toList rails 
+
+    isCornerTopLeft     = hasPoint 1 0 && hasPoint 0 1 && not (hasPoint (-1) 0 || hasPoint 0 (-1))
+    isCornerTopRight    = hasPoint (-1) 0 && hasPoint 0 1 && not (hasPoint 1 0 || hasPoint 0 (-1))
+    isCornerBottomLeft  = hasPoint 1 0 && hasPoint 0 (-1) && not (hasPoint (-1) 0 || hasPoint 0 1)
+    isCornerBottomRight = hasPoint (-1) 0 && hasPoint 0 (-1) && not (hasPoint 1 0 || hasPoint 0 1)
+    isVerticalLine      = hasPoint 0 (-1) && hasPoint 0 1
+    isHorizontalLine    = hasPoint (-1) 0 && hasPoint 1 0
+
 
 
 isGameSuccessful :: Game -> Bool
@@ -328,7 +348,7 @@ theMap = attrMap V.defAttr
     , (blueTargetAttr, fg V.blue)
     , (doorAttr, fg V.green)
     , (switchAttr, fg V.red)
-    , (railAttr, fg V.black)
+    , (railAttr, fg V.white)
     ]
 
 

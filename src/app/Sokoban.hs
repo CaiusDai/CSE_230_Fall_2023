@@ -237,8 +237,8 @@ b3 = Game
         ,_switch       =  V2 7 4       
         ,_switchState  = False
 
-        ,_rail     = S.fromList[V2 3 3, V2 3 4]
-        ,_railEnEx = S.fromList[V2 2 3, V2 4 4]
+        ,_rail     = S.fromList[V2 3 2, V2 3 3, V2 3 4]
+        ,_railEnEx = S.fromList[V2 2 2, V2 4 4]
         -- ,_inRail = False
 
         , _dir     = Up
