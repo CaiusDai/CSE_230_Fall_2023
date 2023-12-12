@@ -257,7 +257,7 @@ drawGame gs
     redTargetPositions = toList $ getColoredTargetPositions "red" gs
     blueTargetPositions = toList $ getColoredTargetPositions "blue" gs
     doorPositions = toList (getDoor gs)
-    railPositions = toList (getRail gs) ++ toList (getRailEnEx gs)
+    railPositions = toList (getRail gs)
 
     cell pos
         | pos == getUser gs = withAttr playerAttr $ str userFigure
