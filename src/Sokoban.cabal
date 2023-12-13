@@ -63,8 +63,7 @@ executable Sokoban
     -- Modules included in this executable, other than Main.
     -- other-modules:
     other-modules:    UI,
-                      Sokoban,
-                      Test
+                      Sokoban
                     
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
@@ -90,3 +89,25 @@ executable Sokoban
 
     -- ghc options
     ghc-options: -threaded
+
+test-suite sokoban-test
+  type:           exitcode-stdio-1.0
+  hs-source-dirs: app, test
+  main-is:        Test.hs
+  other-modules:    UI,
+                    Sokoban
+  build-depends:    base ^>=4.17.2.0,
+                    brick >=2.1.0,
+                    vty >= 6.1,
+                    mtl,
+                    vty-unix,
+                    containers,
+                    extra,
+                    linear,
+                    lens,
+                    random,
+                    transformers
+
+  default-language: Haskell2010
+
+  ghc-options: -Wall -threaded -Wno-unused-imports -Wno-deprecations

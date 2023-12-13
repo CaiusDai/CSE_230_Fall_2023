@@ -102,10 +102,10 @@ initialState :: AppState
 initialState = appState
 
 allMaps :: [Game]
-allMaps = [b1, b2, b3, classicBox, mordenBox, wildCardBox, railBox]
+allMaps = [b1, b2, b3, classicBox, mordenBox, wildCardBox, railBox, icefloorBox, fragilefloorBox, doorBox]
 
 mapNames :: [String]
-mapNames = ["Map 1","Map 2","Map 3", "classicBox", "mordenBox", "wildCardBox", "railBox"]
+mapNames = ["Map 1","Map 2","Map 3", "classicBox", "mordenBox", "wildCardBox", "railBox", "icefloorBox", "fragilefloorBox", "doorBox"]
 
 -- App: Entry of UI
 app :: App AppState TimerEvent ()
@@ -369,8 +369,7 @@ handleEvent (VtyEvent (EvKey key [])) = do
         KEnter    -> put $ updateMenuStatus as MapSelection
         KChar 'q' -> halt
         _         -> return ()
-    else if getMenuStatus as == MapSelection
-    then case key of
+    else if getMenuStatus as == MapSelection    then case key of
         KChar 'w' -> moveSelection Up as
         KChar 's' -> moveSelection Down as
         KEnter -> put $ startTimer $ updateMenuStatus (updateGame2 (updateGame1 as (loadMap (getMapIdx as))) (loadMap (getMapIdx as))) GamePlay
