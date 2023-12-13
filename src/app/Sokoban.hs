@@ -13,7 +13,7 @@ module Sokoban (
     AppState(AppState),
     nextPos, Game(Game), Direction, checkOnTarget,GameMode(Single,Multi), UIState(MainMenu, MapSelection, GamePlay),
     -- maps
-    classicBox, mordenBox, wildCardBox, railBox
+    classicBox, mordenBox, wildCardBox, railBox, icefloorBox, fragilefloorBox, doorBox
 
 ) where
 
@@ -656,6 +656,94 @@ railBox = Game
         , _num_steps = 0
         }
 
+icefloorBox :: Game
+icefloorBox = Game
+        { _user    = V2 1 2
+        , _boxes   = S.fromList[V2 2 2]
+        , _walls   = S.fromList[V2 1 0, V2 2 0, V2 3 0, V2 4 0, V2 5 0, V2 6 0,
+                                V2 0 1, V2 1 1, V2 6 1,
+                                V2 0 2, V2 6 2,
+                                V2 0 3, V2 1 3, V2 2 3, V2 5 3, V2 6 3,
+                                V2 2 4, V2 3 4, V2 4 4, V2 5 4]
+        , _targets = S.fromList[V2 2 1]
+        , _icefloors = S.fromList[V2 3 1, V2 3 2] 
+        , _fragileFloors = S.empty
+        , _holes         = S.empty
+        , _doors        = S.empty 
+        , _switch       = V2 20 20       
+        , _switchState  = False
+        , _rail     = S.empty
+        , _railEnEx = S.empty
+        , _dir     = Up
+        , _score  = 0
+        , _suceess = False
+        , _dead    = False
+        , _num_target = 1
+        -- boxes update
+        , _boxCat = S.fromList(["red"])
+        , _boxIdx = (M.insert "red" (S.fromList [0]) M.empty)
+        , _num_steps = 0
+        }
+
+fragilefloorBox :: Game
+fragilefloorBox = Game
+        { _user    = V2 1 2
+        , _boxes   = S.fromList[V2 2 3, V2 3 3, V2 4 3]
+        , _walls   = S.fromList[V2 1 0, V2 2 0, V2 3 0,
+                                V2 0 1, V2 1 1, V2 3 1, V2 4 1, V2 5 1, V2 6 1,
+                                V2 0 2, V2 6 2,
+                                V2 0 3, V2 1 3, V2 6 3,
+                                V2 1 4, V2 6 4,
+                                V2 1 5, V2 2 5, V2 3 5, V2 4 5, V2 5 5, V2 6 5]
+        , _targets = S.fromList[V2 2 1]
+        , _icefloors =  S.empty
+        , _fragileFloors = S.fromList[V2 2 2, V2 3 2]
+        , _holes         = S.empty
+        , _doors        = S.empty 
+        , _switch       = V2 20 20       
+        , _switchState  = False
+        , _rail     = S.empty
+        , _railEnEx = S.empty
+        , _dir     = Up
+        , _score  = 0
+        , _suceess = False
+        , _dead    = False
+        , _num_target = 1
+        -- boxes update
+        , _boxCat = S.fromList(["red"])
+        , _boxIdx = (M.insert "red" (S.fromList [0]) M.empty)
+        , _num_steps = 0
+        }
+
+doorBox :: Game
+doorBox = Game
+        { _user    = V2 1 3
+        , _boxes   = S.fromList[V2 4 1, V2 4 3]
+        , _walls   = S.fromList[V2 2 0, V2 3 0, V2 4 0, V2 5 0, V2 6 0,
+                                V2 2 1, V2 6 1,
+                                V2 0 2, V2 1 2, V2 2 2, V2 6 2,
+                                V2 0 3, V2 6 3,
+                                V2 0 4, V2 1 4, V2 2 4, V2 6 4,
+                                V2 2 5, V2 3 5, V2 4 5, V2 5 5, V2 6 5]
+        , _targets = S.fromList[V2 3 1]
+        , _icefloors =  S.empty
+        , _fragileFloors = S.empty
+        , _holes         = S.empty
+        , _doors        = S.fromList[V2 3 2, V2 4 2, V2 5 2] 
+        , _switch       = V2 2 3      
+        , _switchState  = False
+        , _rail     = S.empty
+        , _railEnEx = S.empty
+        , _dir     = Up
+        , _score  = 0
+        , _suceess = False
+        , _dead    = False
+        , _num_target = 1
+        -- boxes update
+        , _boxCat = S.fromList(["red"])
+        , _boxIdx = (M.insert "red" (S.fromList [0]) M.empty)
+        , _num_steps = 0
+        }
 
 
 
