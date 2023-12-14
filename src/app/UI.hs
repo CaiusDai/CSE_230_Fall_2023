@@ -420,13 +420,12 @@ movePlayer1 direction = do
     as <- get
     let gs = getGame1 as
     let gs' = step direction gs
-    -- if isGameSuccessful gs'
-    -- then do
-    --     let updatedAppState = updateGame1 as gs'  
-    --     put $ haltTimer updatedAppState           
-    -- else do
-    let updatedAppState = updateGame1 as gs'
-    put updatedAppState
+    let updatedAppState = updateGame1 as gs' 
+    if isGameSuccessful gs'
+    then do 
+        put $ haltTimer updatedAppState           
+    else do
+        put updatedAppState
 
 
 movePlayer2 :: So.Direction -> EventM () AppState ()
@@ -434,13 +433,12 @@ movePlayer2 direction = do
     as <- get
     let gs = getGame2 as
     let gs' = step direction gs
-    -- if isGameSuccessful gs'
-    -- then do
-    --     let updatedAppState = updateGame2 as gs'  
-    --     put $ haltTimer updatedAppState           
-    -- else do
     let updatedAppState = updateGame2 as gs'
-    put updatedAppState
+    if isGameSuccessful gs'
+    then do  
+        put $ haltTimer updatedAppState           
+    else do
+        put updatedAppState
 
 
 
