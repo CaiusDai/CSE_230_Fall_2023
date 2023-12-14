@@ -3,7 +3,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Sokoban (
-    b1, b2, b3, appState,
+    appState,
     getUser, getBoxes, getTargets, getWall,getScore, getNumTarget,getSteps,getTimer,updateTimer,
     getMenuStatus, updateMenuStatus, getGameMode,updateGameMode, getHoles, getFragiles, getIces,
     getBoxIdx, getDead,getDoor, getSwitch,getRail, getRailEnEx, getGame1, getGame2,updateGame1, updateGame2,
@@ -13,7 +13,7 @@ module Sokoban (
     AppState(AppState),
     nextPos, Game(Game), Direction, checkOnTarget,GameMode(Single,Multi), UIState(MainMenu, MapSelection, GamePlay),
     -- maps
-    classicBox, mordenBox, wildCardBox, railBox, icefloorBox, fragilefloorBox, doorBox
+    combined, classicBox, mordenBox, wildCardBox, railBox, icefloorBox, fragilefloorBox, doorBox
 
 ) where
 
@@ -157,54 +157,6 @@ num_targets = 1
 --         , _game_mode = Single
 --         , _ui_state = MainMenu
 --         }
-b1 :: Game
-b1 = Game
-    { _user = V2 1 1 
-    , _boxes = S.fromList [V2 2 2]
-    , _walls = S.fromList [V2 0 0, V2 0 1, V2 0 2, V2 1 0, V2 2 0]
-    , _targets = S.fromList [V2 3 3]  
-    , _icefloors = S.empty  
-    , _fragileFloors = S.empty 
-    , _holes = S.empty  
-    , _doors = S.empty 
-    , _switch = V2 0 0 
-    , _switchState = False 
-    , _rail = S.empty 
-    , _railEnEx = S.empty 
-    , _dir = Up  
-    , _score = 0  
-    , _suceess = False 
-    , _dead = False 
-    , _num_target = 1 
-    , _boxCat = S.fromList ["standard"]  
-    , _boxIdx = M.singleton "standard" (S.fromList [0]) 
-    , _num_steps = 0  
-    }
-
-b2 :: Game
-b2 = Game
-    { _user = V2 1 2  
-    , _boxes = S.fromList [V2 3 2, V2 4 3]  
-    , _walls = S.fromList [V2 0 0, V2 0 1, V2 0 2, V2 1 0, V2 2 0, V2 3 0] 
-    , _targets = S.fromList [V2 4 4, V2 5 5] 
-    , _icefloors = S.empty 
-    , _fragileFloors = S.empty
-    , _holes = S.empty  
-    , _doors = S.empty 
-    , _switch = V2 0 0  
-    , _switchState = False 
-    , _rail = S.empty 
-    , _railEnEx = S.empty 
-    , _dir = Down  
-    , _score = 0 
-    , _suceess = False 
-    , _dead = False 
-    , _num_target = 2 
-    , _boxCat = S.fromList ["standard"]
-    , _boxIdx = M.singleton "standard" (S.fromList [0, 1])
-    , _num_steps = 0  
-}
-
 
 
 boxidx :: IndexMap
@@ -214,8 +166,8 @@ empty = M.empty
 boxidx = M.insert "red" redidx . M.insert "blue" blueidx $ empty
 
 idx3 = S.fromList([0,1,2])
-b3 :: Game
-b3 = Game
+combined :: Game
+combined = Game
         { _user    = V2 3 6
         , _boxes   = S.fromList[V2 3 5, V2 6 4, V2 6 6, V2 6 2, V2 5 7]
         , _walls   = wall
@@ -251,10 +203,10 @@ appState = AppState {
     _timer_running = False,
     _ui_state = MainMenu,
     _game_mode = Single,
-    _map_idx = 2,
+    _map_idx = 0,
 
-    _game_1 = b3,
-    _game_2 = b3
+    _game_1 = combined,
+    _game_2 = combined
 }
 
 
