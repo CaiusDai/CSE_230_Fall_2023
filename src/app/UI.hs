@@ -23,7 +23,7 @@ import Brick (
 import Graphics.Vty.Input (Key(..), Event(..))
 import qualified Graphics.Vty as V
 import Control.Concurrent (forkIO, threadDelay)
-import Control.Monad (forever)
+import Control.Monad (forever, unless)
 import Text.Printf (printf)
 import GHC.Conc.Sync (ThreadId)
 
@@ -143,7 +143,7 @@ drawMultiPlayer :: AppState -> [Widget ()]
 drawMultiPlayer a = [center
                     $ withBorderStyle BS.unicode
                     $ borderWithLabel (str " Sokoban Game - Multiplayer ")
-                    $ hLimit 180 $ vLimit 40 
+                    $ hLimit 180 $ vLimit 40
                     $ vBox [ hBox [ vBox [ padRight (Pad 2) (drawScore (getGame1 a) (getTimer a))
                                         , drawGame (getGame1 a) ]
                                   , padLeft (Pad 4) $ padRight (Pad 4) (vBox [ drawScore (getGame2 a) (getTimer a)
@@ -293,16 +293,16 @@ indices2Seq indices coords = S.fromList $ map (S.index coords) (toList indices)
 
 drawRail :: Coord -> Seq Coord -> [Char]
 drawRail (V2 x y) rails
-    | isCornerTopLeft     = " ╔ " 
+    | isCornerTopLeft     = " ╔ "
     | isCornerTopRight    = " ╗ "
-    | isCornerBottomLeft  = " ╚ " 
-    | isCornerBottomRight = " ╝ " 
+    | isCornerBottomLeft  = " ╚ "
+    | isCornerBottomRight = " ╝ "
     | isVerticalLine      = " ║ "
     | isHorizontalLine    = " ═ "
     | otherwise           = "   "
   where
     hasPoint dx dy = V2 (x + dx) (y + dy) `elem` railsList
-    railsList = toList rails 
+    railsList = toList rails
 
     isCornerTopLeft     = hasPoint 1 0 && hasPoint 0 1 && not (hasPoint (-1) 0 || hasPoint 0 (-1))
     isCornerTopRight    = hasPoint (-1) 0 && hasPoint 0 1 && not (hasPoint 1 0 || hasPoint 0 (-1))
@@ -351,6 +351,9 @@ theMap = attrMap V.defAttr
     , (railAttr, fg V.white)
     ]
 
+-- Helper function to check if the game is over (success or failure)
+isGameOver :: Game -> Bool
+isGameOver game = isGameSuccessful game || isGameFailed game
 
 handleEvent :: BrickEvent () TimerEvent -> EventM () AppState ()
 -- Handle Timer Events
@@ -362,45 +365,54 @@ handleEvent (AppEvent Tick) = do
 -- Handle Key press Events
 handleEvent (VtyEvent (EvKey key [])) = do
     as <- get
-    if getMenuStatus as == MainMenu
-    then case key of
-        KChar 'w' -> put $ updateGameMode as Single
-        KChar 's' -> put $ updateGameMode as Multi
-        KEnter    -> put $ updateMenuStatus as MapSelection
-        KChar 'q' -> halt
-        _         -> return ()
-    else if getMenuStatus as == MapSelection    then case key of
-        KChar 'w' -> moveSelection Up as
-        KChar 's' -> moveSelection Down as
-        KEnter -> put $ startTimer $ updateMenuStatus (updateGame2 (updateGame1 as (loadMap (getMapIdx as))) (loadMap (getMapIdx as))) GamePlay
-        KChar 'q' -> halt
-        _         -> return ()
-    -- else if isGameSuccessful (getGame1 as) || isGameFailed (getGame1 as)
-    -- then case key of
-    --     KChar 'r' -> restartGame
-    --     KChar 'q' -> halt
-    --     _         -> return ()
-    else if getGameMode as == Single
-    then case key of
-        KChar 'w' -> movePlayer1 up
-        KChar 's' -> movePlayer1 down
-        KChar 'a' -> movePlayer1 left
-        KChar 'd' -> movePlayer1 right
+
+    let game1Over = isGameOver (getGame1 as)
+    let game2Over = isGameOver (getGame2 as)
+
+    case getMenuStatus as of
+        MainMenu -> case key of
+            KChar 'w' -> put $ updateGameMode as Single
+            KChar 's' -> put $ updateGameMode as Multi
+            KEnter    -> put $ updateMenuStatus as MapSelection
+            KChar 'q' -> halt
+            _         -> return ()
+
+        MapSelection -> case key of
+            KChar 'w' -> moveSelection Up as
+            KChar 's' -> moveSelection Down as
+            KEnter -> put $ startTimer $ updateMenuStatus (updateGame2 (updateGame1 as (loadMap (getMapIdx as))) (loadMap (getMapIdx as))) GamePlay
+            KChar 'q' -> halt
+            _         -> return ()
+
+        GamePlay -> case getGameMode as of
+            Single -> unless game1Over $ handleSinglePlayerKeys key
+            Multi  -> handleMultiPlayerKeys key game1Over game2Over
+
+    -- Common keys for all modes
+    case key of
         KChar 'r' -> restartGame
         KChar 'q' -> halt
         _         -> return ()
-    else case key of
-        KChar 'w' -> movePlayer1 up
-        KChar 's' -> movePlayer1 down
-        KChar 'a' -> movePlayer1 left
-        KChar 'd' -> movePlayer1 right
-        KUp       -> movePlayer2 up
-        KDown     -> movePlayer2 down
-        KLeft     -> movePlayer2 left
-        KRight    -> movePlayer2 right
-        KChar 'r' -> restartGame
-        KChar 'q' -> halt
-        _         -> return ()
+
+    where
+        handleSinglePlayerKeys k = case k of
+            KChar 'w' -> movePlayer1 up
+            KChar 's' -> movePlayer1 down
+            KChar 'a' -> movePlayer1 left
+            KChar 'd' -> movePlayer1 right
+            _         -> return ()
+
+        handleMultiPlayerKeys k g1Over g2Over = case k of
+            KChar 'w' -> unless g1Over $ movePlayer1 up
+            KChar 's' -> unless g1Over $ movePlayer1 down
+            KChar 'a' -> unless g1Over $ movePlayer1 left
+            KChar 'd' -> unless g1Over $ movePlayer1 right
+            KUp       -> unless g2Over $ movePlayer2 up
+            KDown     -> unless g2Over $ movePlayer2 down
+            KLeft     -> unless g2Over $ movePlayer2 left
+            KRight    -> unless g2Over $ movePlayer2 right
+            _         -> return ()
+
 handleEvent _ = return ()
 
 
@@ -420,10 +432,10 @@ movePlayer1 direction = do
     as <- get
     let gs = getGame1 as
     let gs' = step direction gs
-    let updatedAppState = updateGame1 as gs' 
-    if isGameSuccessful gs'
-    then do 
-        put $ haltTimer updatedAppState           
+    let updatedAppState = updateGame1 as gs'
+    if isGameSuccessful gs' || isGameFailed gs'
+    then do
+        put $ haltTimer updatedAppState
     else do
         put updatedAppState
 
@@ -434,9 +446,9 @@ movePlayer2 direction = do
     let gs = getGame2 as
     let gs' = step direction gs
     let updatedAppState = updateGame2 as gs'
-    if isGameSuccessful gs'
-    then do  
-        put $ haltTimer updatedAppState           
+    if isGameSuccessful gs' || isGameFailed gs'
+    then do
+        put $ haltTimer updatedAppState
     else do
         put updatedAppState
 
