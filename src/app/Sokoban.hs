@@ -30,8 +30,6 @@ import qualified Data.Map as M
 
 
 data AppState = AppState {
-    _timer_seconds   :: Int,
-    _timer_running   :: Bool,
     _ui_state :: UIState,
     _game_mode :: GameMode,
     _map_idx :: Int,
@@ -65,7 +63,8 @@ data Game = Game {
     _suceess :: Bool,
     _dead    :: Bool,
     _num_target:: Int, 
-
+    _timer_seconds   :: Int,
+    _timer_running   :: Bool,
     -- boxes update
     _boxCat  :: Seq String,
     _boxIdx  :: IndexMap,
@@ -190,6 +189,8 @@ combined = Game
         , _suceess = False
         , _dead    = False
         , _num_target = 3
+        , _timer_seconds = 0
+        , _timer_running = False
         -- boxes update
         , _boxCat = S.fromList(["red","blue"])
         , _boxIdx = boxidx
@@ -199,8 +200,6 @@ combined = Game
 
 appState :: AppState
 appState = AppState {
-    _timer_seconds = 0,
-    _timer_running = False,
     _ui_state = MainMenu,
     _game_mode = Single,
     _map_idx = 0,
@@ -439,7 +438,7 @@ getSwitch g = g^. switch
 getSteps :: Game -> Int
 getSteps g = g^. num_steps
 
-getTimer :: AppState -> Int
+getTimer :: Game -> Int
 getTimer a = a^. timer_seconds
 
 getMenuStatus :: AppState -> UIState
@@ -460,16 +459,20 @@ getMapIdx a = a^. map_idx
 updateMapIdx :: AppState -> Int -> AppState
 updateMapIdx a idx = a & map_idx .~ idx
 
-updateTimer :: AppState -> AppState
+updateTimer :: Game -> Game
 updateTimer a = if a ^. timer_running 
                 then a & timer_seconds .~ (a ^. timer_seconds + 1)
                 else a
 
-haltTimer :: AppState -> AppState
+haltTimer :: Game -> Game
 haltTimer a = a & timer_running .~ False
 
 startTimer :: AppState -> AppState
-startTimer a = a & timer_running .~ True
+startTimer a = let g1 = getGame1 a
+                   g2 = getGame2 a
+                in a & game_1 .~ (g1 & timer_running .~ True)
+                      & game_2 .~ (g2 & timer_running .~ True)
+                
 
 getGame1 :: AppState -> Game
 getGame1 a = a^. game_1
@@ -523,6 +526,8 @@ classicBox = Game
         , _suceess = False
         , _dead    = False
         , _num_target = 4
+        , _timer_seconds = 0
+        , _timer_running = False
         -- boxes update
         , _boxCat = S.fromList(["red"])
         , _boxIdx = (M.insert "red" (S.fromList [0,1,2,3]) $ M.empty)
@@ -551,6 +556,8 @@ mordenBox = Game
         , _suceess = False
         , _dead    = False
         , _num_target = 2
+        , _timer_seconds = 0
+        , _timer_running = False
         , _boxCat = S.fromList(["red","blue"])
         , _boxIdx = M.insert "red" (S.fromList [0]) . M.insert "blue" (S.fromList [1])$ M.empty
         , _num_steps = 0
@@ -578,6 +585,8 @@ wildCardBox = Game
         , _suceess = False
         , _dead    = False
         , _num_target = 1
+        , _timer_seconds = 0
+        , _timer_running = False
         , _boxCat = S.fromList(["red"])
         , _boxIdx = M.insert "red" (S.fromList [0]) $ M.empty
         , _num_steps = 0
@@ -604,6 +613,8 @@ railBox = Game
         , _suceess = False
         , _dead    = False
         , _num_target = 1
+        , _timer_seconds = 0
+        , _timer_running = False
         , _boxCat = S.fromList(["red"])
         , _boxIdx = M.insert "red" (S.fromList [0]) $ M.empty
         , _num_steps = 0
@@ -632,6 +643,8 @@ icefloorBox = Game
         , _suceess = False
         , _dead    = False
         , _num_target = 1
+        , _timer_seconds = 0
+        , _timer_running = False
         -- boxes update
         , _boxCat = S.fromList(["red"])
         , _boxIdx = (M.insert "red" (S.fromList [0]) M.empty)
@@ -662,6 +675,8 @@ fragilefloorBox = Game
         , _suceess = False
         , _dead    = False
         , _num_target = 1
+        , _timer_seconds = 0
+        , _timer_running = False
         -- boxes update
         , _boxCat = S.fromList(["red"])
         , _boxIdx = (M.insert "red" (S.fromList [0]) M.empty)
@@ -692,6 +707,8 @@ doorBox = Game
         , _suceess = False
         , _dead    = False
         , _num_target = 1
+        , _timer_seconds = 0
+        , _timer_running = False
         -- boxes update
         , _boxCat = S.fromList(["red"])
         , _boxIdx = (M.insert "red" (S.fromList [0]) M.empty)

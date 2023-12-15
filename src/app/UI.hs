@@ -162,7 +162,7 @@ drawSinglePlayer a =
               hLimit 80 $
                 vLimit 30 $
                   hBox
-                    [ padRight (Pad 2) (drawScore (getGame1 a) (getTimer a)),
+                    [ padRight (Pad 2) (drawScore (getGame1 a) (getTimer $ getGame1 a)),
                       drawGame (getGame1 a),
                       padLeft (Pad 2) (drawHelp Single)
                     ]
@@ -171,6 +171,9 @@ drawSinglePlayer a =
 
 drawMultiPlayer :: AppState -> [Widget ()]
 drawMultiPlayer a =
+    if isGameOver (getGame1 a) && isGameOver (getGame2 a)
+        then [drawMultiModeSuccess a]
+        else
   [ center $
       hBox
         [ padRight (Pad 2) drawElementHelp,
@@ -181,14 +184,14 @@ drawMultiPlayer a =
                   vBox
                     [ hBox
                         [ vBox
-                            [ padRight (Pad 2) (drawScore (getGame1 a) (getTimer a)),
+                            [ padRight (Pad 2) (drawScore (getGame1 a) (getTimer $ getGame1 a)),
                               drawGame (getGame1 a)
                             ],
                           padLeft (Pad 4) $
                             padRight
                               (Pad 4)
                               ( vBox
-                                  [ drawScore (getGame2 a) (getTimer a),
+                                  [ drawScore (getGame2 a) (getTimer $ getGame2 a),
                                     drawGame (getGame2 a)
                                   ]
                               )
@@ -380,6 +383,31 @@ drawSuccess =
   center $
     vBox [str "Success!", str "You solved the puzzle!", str "Press 'R' to re-start.", str "Press 'Q' to quit."]
 
+drawMultiModeSuccess :: AppState -> Widget ()
+drawMultiModeSuccess as=
+    let game1 = getGame1 as
+        game2 = getGame2 as
+        steps1 = getSteps game1
+        steps2 = getSteps game2
+        time1 = getTimer game1
+        time2 = getTimer game2
+        no_winner = steps1 == steps2 && time1 == time2
+        winner
+          | steps1 < steps2 = "Player1"
+          | steps1 > steps2 = "Player2"
+          | time1 < time2 = "Player1"
+          | time1 > time2 = "Player2"
+          | otherwise = "Both of you!"
+        in
+            center $
+                vBox [str "Success!", 
+                         str ("Player1: " ++ show steps1 ++ " steps, " ++ show time1 ++ " seconds"),
+                         str ("Player2: " ++ show steps2 ++ " steps, " ++ show time2 ++ " seconds"),
+                         str (if no_winner then "Same performance, well done!" else winner ++ " wins!"),
+                         str "Press 'R' to re-start.", str "Press 'Q' to quit."]
+
+
+
 drawFail :: Widget ()
 drawFail =
   center $
@@ -415,9 +443,15 @@ isGameOver game = isGameSuccessful game || isGameFailed game
 handleEvent :: BrickEvent () TimerEvent -> EventM () AppState ()
 -- Handle Timer Events
 handleEvent (AppEvent Tick) = do
-  gs <- get
-  let gs' = updateTimer gs
-  put gs'
+  as <- get
+  let gs1 = getGame1 as
+  let gs2 = getGame2 as
+  let gs1' = updateTimer gs1
+  let  gs2' = updateTimer gs2
+  let  as' = updateGame1 (updateGame2 as gs2') gs1'
+  put as'
+
+
 
 -- Handle Key press Events
 handleEvent (VtyEvent (EvKey key [])) = do
@@ -505,7 +539,7 @@ movePlayer1 direction = do
   let updatedAppState = updateGame1 as gs'
   if isGameSuccessful gs' || isGameFailed gs'
     then do
-      put $ haltTimer updatedAppState
+      put $ updateGame1 updatedAppState (haltTimer $ getGame1 updatedAppState)
     else do
       put updatedAppState
 
@@ -517,7 +551,7 @@ movePlayer2 direction = do
   let updatedAppState = updateGame2 as gs'
   if isGameSuccessful gs' || isGameFailed gs'
     then do
-      put $ haltTimer updatedAppState
+      put $ updateGame2 updatedAppState (haltTimer $ getGame2 updatedAppState)
     else do
       put updatedAppState
 
