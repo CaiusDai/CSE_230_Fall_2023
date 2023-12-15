@@ -283,11 +283,11 @@ drawHelp gameMode =
           str " A - Move Left",
           str " D - Move Right",
           str " Q - Quit Game",
-          str " R - Restart Game"
+          str " R - Back to main menu"
         ]
       Multi ->
         [ str " Q - Quit Game",
-          str " R - Restart Game",
+          str " R - Back to main menu",
           str "Controls for Player 1:",
           str " W - Move Up",
           str " S - Move Down",
@@ -309,7 +309,7 @@ drawGame gs
     rows = [hBox $ cellsInRow y | y <- [0 .. boardSize - 1]]
     cellsInRow y = [cell (V2 x y) | x <- [0 .. boardSize - 1]]
     boxPositions = toList (getBoxes gs)
-    boxesOnTargets = [pos | (pos, onTarget) <- zip boxPositions (toList (So.checkOnTarget (getBoxes gs) (getTargets gs))), onTarget]
+    boxesOnTargets = toList (onTargetBox gs)
     holePositions = toList (getHoles gs)
     fragilePositions = toList (getFragiles gs)
     icePositions = toList (getIces gs)
@@ -326,9 +326,9 @@ drawGame gs
       | pos `elem` toList (getWall gs) = withAttr wallAttr $ str wallFigure
       | pos `elem` redBoxPositions = withAttr redBoxAttr $ str boxFigure
       | pos `elem` blueBoxPositions = withAttr blueBoxAttr $ str boxFigure
+      | pos `elem` boxPositions && not (pos `elem` redBoxPositions || pos `elem` blueBoxPositions) = withAttr wildBoxAttr $ str boxFigure
       | pos `elem` redTargetPositions = withAttr redTargetAttr $ str targetFigure
       | pos `elem` blueTargetPositions = withAttr blueTargetAttr $ str targetFigure
-      | pos `elem` boxPositions && not (pos `elem` redBoxPositions || pos `elem` blueBoxPositions) = withAttr wildBoxAttr $ str boxFigure
       | pos `elem` holePositions = withAttr holeAttr $ str holeFigure
       | pos `elem` icePositions = withAttr iceAttr $ str iceFigure
       | pos `elem` fragilePositions = withAttr fragileAttr $ str fragileFigure
@@ -404,14 +404,14 @@ drawMultiModeSuccess as=
                          str ("Player1: " ++ show steps1 ++ " steps, " ++ show time1 ++ " seconds"),
                          str ("Player2: " ++ show steps2 ++ " steps, " ++ show time2 ++ " seconds"),
                          str (if no_winner then "Same performance, well done!" else winner ++ " wins!"),
-                         str "Press 'R' to re-start.", str "Press 'Q' to quit."]
+                         str "Press 'R' to back to main menu.", str "Press 'Q' to quit."]
 
 
 
 drawFail :: Widget ()
 drawFail =
   center $
-    vBox [str "Failed!", str "The game is dead!", str "Press 'R' to re-start.", str "Press 'Q' to quit."]
+    vBox [str "Failed!", str "The game is dead!", str "Press 'R' back to main menu.", str "Press 'Q' to quit."]
 
 theMap :: AttrMap
 theMap =

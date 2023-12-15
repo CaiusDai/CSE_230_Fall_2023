@@ -11,7 +11,7 @@ module Sokoban (
     up, down, left, right,
     Coord(..),
     AppState(AppState),
-    nextPos, Game(Game), Direction, checkOnTarget,GameMode(Single,Multi), UIState(MainMenu, MapSelection, GamePlay),
+    nextPos, Game(Game), Direction, onTargetBox,GameMode(Single,Multi), UIState(MainMenu, MapSelection, GamePlay),
     -- maps
     combined, classicBox, mordenBox, wildCardBox, railBox, icefloorBox, fragilefloorBox, doorBox
 
@@ -219,6 +219,7 @@ moveBox  = update
 indices2Seq :: Seq Int -> Seq Coord -> Seq Coord
 indices2Seq indices seq = S.fromList [seq `S.index` idx | idx <- toList indices]
 
+-- Given two Seq of Coord, check if they are the same
 checkCondition :: Seq Coord -> Seq Coord -> Bool 
 checkCondition  seq1 seq2 = 
     let set1 = fromList (toList seq1)
@@ -240,11 +241,17 @@ checkSuccess g = checkHelper (M.toList (g^. boxIdx))
             else checkHelper rest 
 
 
--- Given a sequence of boxes and a sequence of targets, check which boxes are on targets
-checkOnTarget :: Seq Coord -> Seq Coord -> Seq Bool
-checkOnTarget boxes targets = 
-    let targetsList = toList targets  -- Convert targets sequence to list for easy comparison
-    in S.fromList [box `elem` targetsList | box <- toList boxes]
+-- return the list of boxes that are on target, wild boxes are not considered
+onTargetBox :: Game -> [Coord]
+onTargetBox g = checkHelper (M.toList (g^. boxIdx))
+  where
+    checkHelper [] = []  
+    checkHelper ((key, indices):rest) =
+      let targetSeq = indices2Seq indices (g^.targets)
+          boxesSeq = indices2Seq indices (g^.boxes)
+      in 
+        filter (\coord -> coord `elem` (toList targetSeq)) (toList boxesSeq) ++ checkHelper rest
+
 
 -- Check if a box at a given index is in BoxIdx
 isBoxInBoxIdx :: Int -> Game -> Bool
@@ -411,8 +418,7 @@ getDead :: Game -> Bool
 getDead g = g^. dead
 
 getScore :: Game -> Int
-getScore g = let boxesOnTargets = checkOnTarget (getBoxes g) (getTargets g)
-                in length $ filter id $ toList boxesOnTargets
+getScore g = length $ onTargetBox g
 
 getBoxCat :: Game -> Seq String 
 getBoxCat g = g^. boxCat
