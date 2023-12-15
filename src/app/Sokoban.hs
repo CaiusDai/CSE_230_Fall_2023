@@ -197,7 +197,6 @@ combined = Game
         , _num_steps = 0
         }
 
-
 appState :: AppState
 appState = AppState {
     _ui_state = MainMenu,
