@@ -338,8 +338,8 @@ step d g =
             Nothing ->
                 case isNextWall of
                     Nothing ->
-                        -- move
-                        step_ d g
+                        -- move and update num_step
+                        step_ d g & num_steps %~ (+1)
                     Just _ ->
                         g
             Just nextBoxIndex -> -- the index of the box
@@ -368,8 +368,9 @@ step d g =
                                             (True, True, _) -> 
                                                 g & user .~ nextUserPos
                                                 & boxes .~ (update nextBoxIndex nextBoxPos (g ^. boxes))
+                                                & num_steps %~ (+1)
                                             (True, _, True) -> 
-                                                step_ d g
+                                                step_ d g & num_steps %~ (+1)
                                             (True, False, False) -> g
                                             
                                             (False, _, _) -> 
@@ -377,10 +378,10 @@ step d g =
                                                 case ((elem boxPos (g^. railEnEx)), 
                                                     (elem nextBoxPos (g^. rail))  ) of 
                                                     (True, _) -> 
-                                                        step_ d g
+                                                        step_ d g & num_steps %~ (+1)
                                                     (False, True)  -> g 
                                                     (False, False) -> 
-                                                        step_ d g
+                                                        step_ d g & num_steps %~ (+1)
 
 -- Getters and Setters
 getUser :: Game -> Coord
