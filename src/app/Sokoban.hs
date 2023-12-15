@@ -167,21 +167,29 @@ boxidx = M.insert "red" redidx . M.insert "blue" blueidx $ empty
 idx3 = S.fromList([0,1,2])
 combined :: Game
 combined = Game
-        { _user    = V2 3 6
-        , _boxes   = S.fromList[V2 3 5, V2 6 4, V2 6 6, V2 6 2, V2 5 7]
-        , _walls   = wall
-        , _targets = S.fromList[V2 3 5, V2 6 3, V2 6 7]
-        -- , _targets = S.fromList[V2 6 6, V2 4 6, V2 5 6]
-        -- ,_targets = S.fromList[V2 2 3, V2 3 3, V2 4 3]
-        , _icefloors = S.fromList [V2 5 4, V2 5 8]
-        , _fragileFloors = S.fromList [V2 7 5]
+        { _user    = V2 1 3 
+        , _boxes   = S.fromList[V2 2 4, V2 5 5, V2 4 8, V2 4 3, V2 3 4, V2 4 6]
+        , _walls   = S.fromList[V2 1 0, V2 2 0, V2 3 0, V2 6 0, V2 7 0, V2 8 0, V2 9 0, 
+                                V2 1 1, V2 3 1, V2 6 1, V2 9 1, 
+                                V2 0 2, V2 1 2, V2 3 2, V2 4 2, V2 5 2, V2 6 2, V2 9 2,
+                                V2 0 3, V2 8 3, V2 9 3,
+                                V2 0 4, V2 1 4, V2 9 4,
+                                V2 1 5, V2 9 5,
+                                V2 1 6, V2 2 6, V2 9 6,
+                                V2 0 7, V2 1 7, V2 2 7, V2 6 7, V2 9 7,
+                                V2 0 8, V2 6 8, V2 9 8,
+                                V2 0 9, V2 1 9, V2 2 9, V2 3 9, V2 4 9, V2 5 9, V2 6 9, V2 7 9, V2 8 9, V2 9 9
+                                ]
+        , _targets = S.fromList[V2 2 1, V2 8 8, V2 1 8]
+        , _icefloors = S.fromList [V2 2 2, V2 3 8]
+        , _fragileFloors = S.fromList [V2 2 3, V2 3 3]
         , _holes         = S.empty
-        , _doors        =  S.fromList [V2 5 6]   
-        , _switch       =  V2 7 4       
+        , _doors        =  S.fromList [V2 2 8]   
+        , _switch       =  V2 5 6     
         , _switchState  = False
 
-        , _rail     = S.fromList[V2 3 2, V2 3 3, V2 3 4]
-        , _railEnEx = S.fromList[V2 2 2, V2 4 4]
+        , _rail     = S.fromList[V2 7 4, V2 7 5, V2 7 6]
+        , _railEnEx = S.fromList[V2 6 4, V2 8 6]
         -- ,_inRail = False
 
         , _dir     = Up
@@ -195,8 +203,8 @@ combined = Game
         , _boxCat = S.fromList(["red","blue"])
         , _boxIdx = boxidx
         , _num_steps = 0
-        }
-
+        } 
+        
 appState :: AppState
 appState = AppState {
     _ui_state = MainMenu,
