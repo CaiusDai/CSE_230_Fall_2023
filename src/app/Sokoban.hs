@@ -13,7 +13,7 @@ module Sokoban (
     AppState(AppState),
     nextPos, Game(Game), Direction, onTargetBox,GameMode(Single,Multi), UIState(MainMenu, MapSelection, GamePlay),
     -- maps
-    combined, classicBox, mordenBox, wildCardBox, railBox, icefloorBox, fragilefloorBox, doorBox
+    combined, classicBox, mordenBox, wildCardBox, railBox, icefloorBox, fragilefloorBox, doorBox, simpleBox
 
 ) where
 
@@ -69,7 +69,7 @@ data Game = Game {
     _boxCat  :: Seq String,
     _boxIdx  :: IndexMap,
     _num_steps:: Int
-} deriving (Show)
+} deriving (Show, Eq)
 
 data GameMode = Single | Multi deriving (Show,Eq)
 
@@ -239,6 +239,8 @@ checkSuccess g = checkHelper (M.toList (g^. boxIdx))
         if not (checkCondition targetSeq boxesSeq)
             then False  
             else checkHelper rest 
+
+
 
 
 -- return the list of boxes that are on target, wild boxes are not considered
@@ -478,7 +480,7 @@ startTimer a = let g1 = getGame1 a
                    g2 = getGame2 a
                 in a & game_1 .~ (g1 & timer_running .~ True)
                       & game_2 .~ (g2 & timer_running .~ True)
-                
+
 
 getGame1 :: AppState -> Game
 getGame1 a = a^. game_1
@@ -684,6 +686,8 @@ fragilefloorBox = Game
         , _timer_seconds = 0
         , _timer_running = False
         -- boxes update
+        , _timer_seconds = 0
+        , _timer_running = False
         , _boxCat = S.fromList(["red"])
         , _boxIdx = (M.insert "red" (S.fromList [0]) M.empty)
         , _num_steps = 0
@@ -715,13 +719,39 @@ doorBox = Game
         , _num_target = 1
         , _timer_seconds = 0
         , _timer_running = False
+
         -- boxes update
         , _boxCat = S.fromList(["red"])
         , _boxIdx = (M.insert "red" (S.fromList [0]) M.empty)
         , _num_steps = 0
         }
 
-
+simpleBox = Game
+        { _user    = V2 4 4
+        , _boxes   = S.fromList[V2 5 4, V2 6 4]
+        , _walls   = S.fromList [V2 x y | x <- [3..8], y <- [2, 6]] <>
+                     S.fromList [V2 x y | x <- [3, 8], y <- [3..6]]
+        , _targets = S.fromList[V2 5 3, V2 6 3]
+        , _icefloors = S.empty
+        , _fragileFloors = S.empty
+        , _holes         = S.empty
+        , _doors        =  S.empty 
+        , _switch       =  V2 10 10       
+        , _switchState  = False
+        , _rail     = S.empty
+        , _railEnEx = S.empty
+        , _dir     = Up
+        , _score  = 0
+        , _suceess = False
+        , _dead    = False
+        , _num_target = 4
+        -- boxes update
+        , _timer_seconds = 0
+        , _timer_running = False
+        , _boxCat = S.fromList(["red"])
+        , _boxIdx = (M.insert "red" (S.fromList [0, 1]) $ M.empty)
+        , _num_steps = 0
+        }
 
 
 
