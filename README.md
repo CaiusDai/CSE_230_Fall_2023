@@ -130,6 +130,21 @@ Also, we decide to add more features into the game:
 3. More environment setting: Now we are designing a new enviroment object: tube, which will limit the moving direction of the user if the user get inside of a tube.
 4. More maps.
 
+### Final Version
+We have implemented all features we mentioned in the last section at this stage. Now the game has fancier UI and more interactions are allowed. Doors, Trails, fragile floor, holes.... we added many interaction elements into our game to make it more interesting. Your performance will be recorded by steps you have made and time you have used and these stats will be updated in real time. If you've passed all puzzles, we also provide competitive mode for you and your friend to test who can perform better for the same puzzle map! You can select the modes in main menu and pick the map you like. Don't worry about the various tools and different environment objects because we also provide you the introduction for them. Enjoy the game!
+Major interfaces would be like the followings:  
+
+#### Main Menu  
+![MainMenu](imgs/MainMenu.png)  
+#### Map Selection   
+![MapSelection](imgs/mapSelection.png)
+#### Single Mode
+![SingleMode](imgs/SingleMode.png)
+#### Competitive Mode
+![MultiUser](imgs/MultiUser.png)
+#### Result Display
+![YouWin!](imgs/ResultDisplay.png)
+
 
 ## Environment Setup
 
@@ -137,4 +152,7 @@ Requirement: Have cabal installed.
 
 To start the game, run the following command under folder *src*
 
-`cabal run`
+`cabal run Sokoban`
+
+We also implemented unit testing, run the tests via  
+`cabal test`
