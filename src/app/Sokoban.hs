@@ -682,8 +682,6 @@ fragilefloorBox = Game
         , _suceess = False
         , _dead    = False
         , _num_target = 1
-        , _timer_seconds = 0
-        , _timer_running = False
         -- boxes update
         , _timer_seconds = 0
         , _timer_running = False
