@@ -11,7 +11,7 @@ module Sokoban (
     up, down, left, right,
     Coord(..),
     AppState(AppState),
-    nextPos, Game(Game), Direction, checkOnTarget,GameMode(Single,Multi), UIState(MainMenu, MapSelection, GamePlay),
+    nextPos, Game(Game), Direction, onTargetBox,GameMode(Single,Multi), UIState(MainMenu, MapSelection, GamePlay),
     -- maps
     combined, classicBox, mordenBox, wildCardBox, railBox, icefloorBox, fragilefloorBox, doorBox
 
@@ -30,8 +30,6 @@ import qualified Data.Map as M
 
 
 data AppState = AppState {
-    _timer_seconds   :: Int,
-    _timer_running   :: Bool,
     _ui_state :: UIState,
     _game_mode :: GameMode,
     _map_idx :: Int,
@@ -65,7 +63,8 @@ data Game = Game {
     _suceess :: Bool,
     _dead    :: Bool,
     _num_target:: Int, 
-
+    _timer_seconds   :: Int,
+    _timer_running   :: Bool,
     -- boxes update
     _boxCat  :: Seq String,
     _boxIdx  :: IndexMap,
@@ -190,6 +189,8 @@ combined = Game
         , _suceess = False
         , _dead    = False
         , _num_target = 3
+        , _timer_seconds = 0
+        , _timer_running = False
         -- boxes update
         , _boxCat = S.fromList(["red","blue"])
         , _boxIdx = boxidx
@@ -199,8 +200,6 @@ combined = Game
 
 appState :: AppState
 appState = AppState {
-    _timer_seconds = 0,
-    _timer_running = False,
     _ui_state = MainMenu,
     _game_mode = Single,
     _map_idx = 0,
@@ -220,6 +219,7 @@ moveBox  = update
 indices2Seq :: Seq Int -> Seq Coord -> Seq Coord
 indices2Seq indices seq = S.fromList [seq `S.index` idx | idx <- toList indices]
 
+-- Given two Seq of Coord, check if they are the same
 checkCondition :: Seq Coord -> Seq Coord -> Bool 
 checkCondition  seq1 seq2 = 
     let set1 = fromList (toList seq1)
@@ -241,11 +241,17 @@ checkSuccess g = checkHelper (M.toList (g^. boxIdx))
             else checkHelper rest 
 
 
--- Given a sequence of boxes and a sequence of targets, check which boxes are on targets
-checkOnTarget :: Seq Coord -> Seq Coord -> Seq Bool
-checkOnTarget boxes targets = 
-    let targetsList = toList targets  -- Convert targets sequence to list for easy comparison
-    in S.fromList [box `elem` targetsList | box <- toList boxes]
+-- return the list of boxes that are on target, wild boxes are not considered
+onTargetBox :: Game -> [Coord]
+onTargetBox g = checkHelper (M.toList (g^. boxIdx))
+  where
+    checkHelper [] = []  
+    checkHelper ((key, indices):rest) =
+      let targetSeq = indices2Seq indices (g^.targets)
+          boxesSeq = indices2Seq indices (g^.boxes)
+      in 
+        filter (\coord -> coord `elem` (toList targetSeq)) (toList boxesSeq) ++ checkHelper rest
+
 
 -- Check if a box at a given index is in BoxIdx
 isBoxInBoxIdx :: Int -> Game -> Bool
@@ -338,8 +344,8 @@ step d g =
             Nothing ->
                 case isNextWall of
                     Nothing ->
-                        -- move
-                        step_ d g
+                        -- move and update num_step
+                        step_ d g & num_steps %~ (+1)
                     Just _ ->
                         g
             Just nextBoxIndex -> -- the index of the box
@@ -368,8 +374,9 @@ step d g =
                                             (True, True, _) -> 
                                                 g & user .~ nextUserPos
                                                 & boxes .~ (update nextBoxIndex nextBoxPos (g ^. boxes))
+                                                & num_steps %~ (+1)
                                             (True, _, True) -> 
-                                                step_ d g
+                                                step_ d g & num_steps %~ (+1)
                                             (True, False, False) -> g
                                             
                                             (False, _, _) -> 
@@ -377,10 +384,10 @@ step d g =
                                                 case ((elem boxPos (g^. railEnEx)), 
                                                     (elem nextBoxPos (g^. rail))  ) of 
                                                     (True, _) -> 
-                                                        step_ d g
+                                                        step_ d g & num_steps %~ (+1)
                                                     (False, True)  -> g 
                                                     (False, False) -> 
-                                                        step_ d g
+                                                        step_ d g & num_steps %~ (+1)
 
 -- Getters and Setters
 getUser :: Game -> Coord
@@ -411,8 +418,7 @@ getDead :: Game -> Bool
 getDead g = g^. dead
 
 getScore :: Game -> Int
-getScore g = let boxesOnTargets = checkOnTarget (getBoxes g) (getTargets g)
-                in length $ filter id $ toList boxesOnTargets
+getScore g = length $ onTargetBox g
 
 getBoxCat :: Game -> Seq String 
 getBoxCat g = g^. boxCat
@@ -438,7 +444,7 @@ getSwitch g = g^. switch
 getSteps :: Game -> Int
 getSteps g = g^. num_steps
 
-getTimer :: AppState -> Int
+getTimer :: Game -> Int
 getTimer a = a^. timer_seconds
 
 getMenuStatus :: AppState -> UIState
@@ -459,16 +465,20 @@ getMapIdx a = a^. map_idx
 updateMapIdx :: AppState -> Int -> AppState
 updateMapIdx a idx = a & map_idx .~ idx
 
-updateTimer :: AppState -> AppState
+updateTimer :: Game -> Game
 updateTimer a = if a ^. timer_running 
                 then a & timer_seconds .~ (a ^. timer_seconds + 1)
                 else a
 
-haltTimer :: AppState -> AppState
+haltTimer :: Game -> Game
 haltTimer a = a & timer_running .~ False
 
 startTimer :: AppState -> AppState
-startTimer a = a & timer_running .~ True
+startTimer a = let g1 = getGame1 a
+                   g2 = getGame2 a
+                in a & game_1 .~ (g1 & timer_running .~ True)
+                      & game_2 .~ (g2 & timer_running .~ True)
+                
 
 getGame1 :: AppState -> Game
 getGame1 a = a^. game_1
@@ -522,6 +532,8 @@ classicBox = Game
         , _suceess = False
         , _dead    = False
         , _num_target = 4
+        , _timer_seconds = 0
+        , _timer_running = False
         -- boxes update
         , _boxCat = S.fromList(["red"])
         , _boxIdx = (M.insert "red" (S.fromList [0,1,2,3]) $ M.empty)
@@ -550,6 +562,8 @@ mordenBox = Game
         , _suceess = False
         , _dead    = False
         , _num_target = 2
+        , _timer_seconds = 0
+        , _timer_running = False
         , _boxCat = S.fromList(["red","blue"])
         , _boxIdx = M.insert "red" (S.fromList [0]) . M.insert "blue" (S.fromList [1])$ M.empty
         , _num_steps = 0
@@ -577,6 +591,8 @@ wildCardBox = Game
         , _suceess = False
         , _dead    = False
         , _num_target = 1
+        , _timer_seconds = 0
+        , _timer_running = False
         , _boxCat = S.fromList(["red"])
         , _boxIdx = M.insert "red" (S.fromList [0]) $ M.empty
         , _num_steps = 0
@@ -603,6 +619,8 @@ railBox = Game
         , _suceess = False
         , _dead    = False
         , _num_target = 1
+        , _timer_seconds = 0
+        , _timer_running = False
         , _boxCat = S.fromList(["red"])
         , _boxIdx = M.insert "red" (S.fromList [0]) $ M.empty
         , _num_steps = 0
@@ -631,6 +649,8 @@ icefloorBox = Game
         , _suceess = False
         , _dead    = False
         , _num_target = 1
+        , _timer_seconds = 0
+        , _timer_running = False
         -- boxes update
         , _boxCat = S.fromList(["red"])
         , _boxIdx = (M.insert "red" (S.fromList [0]) M.empty)
@@ -661,6 +681,8 @@ fragilefloorBox = Game
         , _suceess = False
         , _dead    = False
         , _num_target = 1
+        , _timer_seconds = 0
+        , _timer_running = False
         -- boxes update
         , _boxCat = S.fromList(["red"])
         , _boxIdx = (M.insert "red" (S.fromList [0]) M.empty)
@@ -691,6 +713,8 @@ doorBox = Game
         , _suceess = False
         , _dead    = False
         , _num_target = 1
+        , _timer_seconds = 0
+        , _timer_running = False
         -- boxes update
         , _boxCat = S.fromList(["red"])
         , _boxIdx = (M.insert "red" (S.fromList [0]) M.empty)
