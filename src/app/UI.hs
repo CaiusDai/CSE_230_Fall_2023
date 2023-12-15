@@ -508,18 +508,30 @@ drawElementHelp =
     borderWithLabel (str " Element Help ") $
       padAll 2 $
         vBox
-          [ withAttr playerAttr (str userFigure) <+> str "  Player: " <+> str "You can move it with W/A/S/D",
-            withAttr redBoxAttr (str boxFigure) <+> str "  Box: " <+> str "You need to push the box to a target with the same color",
-            withAttr boxOnTargetAttr (str boxFigure) <+> str "  Success Box: " <+> str "You have successfully pushed it to a target",
-            withAttr wildBoxAttr (str boxFigure) <+> str "  Wild Box: " <+> str "It may help you to solve the puzzle but not counting to score",
-            withAttr redTargetAttr (str targetFigure) <+> str "  Target: " <+> str "Box will turn green when it's on target",
-            str wallFigure <+> str "  Wall: " <+> str "You can't move through it",
-            str holeFigure <+> str "  Hole: " <+> str "Box or user will fall into it",
-            str fragileFigure <+> str "  Fragile Floor: " <+> str "You can only step on it once",
-            str iceFigure <+> str "  Ice Floor: " <+> str "Box will move one step further",
-            withAttr doorAttr (str doorFigure) <+> str "  Door: " <+> str "You can only move through it when the switch is on",
-            withAttr switchAttr (str switchFigure) <+> str "  Switch: " <+> str "Triggered when something is on it",
-            str " ╗ " <+> str "  Rail: " <+> str "You can only move in the direction of the rail"
+          [ withAttr playerAttr (str userFigure) <+> str "  Player ",
+            str "You can move it with W/A/S/D",
+            withAttr redBoxAttr (str boxFigure) <+> str "  Box ",
+            str "You need to push the box to a target with the same color",
+            withAttr boxOnTargetAttr (str boxFigure) <+> str "  Success Box " ,
+            str "You have successfully pushed it to a target",
+            withAttr wildBoxAttr (str boxFigure) <+> str "  Wild Box " ,
+            str "It may help you to solve the puzzle but not counting to score",
+            withAttr redTargetAttr (str targetFigure) <+> str "  Target ",
+            str "Box will turn green when it's on target",
+            str wallFigure <+> str "  Wall ",
+            str "You can't move through it",
+            str holeFigure <+> str "  Hole ",
+            str "Box or user will fall into it",
+            str fragileFigure <+> str "  Fragile Floor " ,
+            str "You can only step on it once",
+            str iceFigure <+> str "  Ice Floor " ,
+            str "Box will move one step further",
+            withAttr doorAttr (str doorFigure) <+> str "  Door",
+            str "You can only move through it when the switch is on",
+            withAttr switchAttr (str switchFigure) <+> str "  Switch ",
+            str "Triggered when something is on it",
+            str " ╗ " <+> str "  Rail ",
+             str "You can only move in the direction of the rail"
           ]
 
 moveSelection :: Brick.Direction -> AppState -> EventM () AppState ()
