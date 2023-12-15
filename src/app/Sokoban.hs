@@ -106,58 +106,6 @@ box' = V2 (xm + 1) (ym + 1)
 boxes' = S.fromList [box']
 num_targets = 1
 
--- only one category for box
-
--- idx1 = S.fromList([0])
--- b1 :: Game
--- b1 = Game
---         { _user    = V2 xm ym
---         , _box     = box'
---         , _boxes   = boxes'
---         , _walls   = wall
---         , _target  = target'
---         , _targets = targets'
---         , _dir     = Up
---         , _score  = 0
---         , _suceess = False
---         , _dead    = False
---         , _num_target = 1
---         , _boxCat = S.fromList(["targets"])
---         , _boxIdx = M.singleton "targets" idx1
---         , _num_steps = 0
---         , _timer_seconds = 0
---         , _timer_running = False
---         , _game_mode = Single
---         , _ui_state = MainMenu
---         }
-
--- idx2 = S.fromList([0,1])
--- b2 :: Game
--- b2 = Game
---         { _user    = V2 xm ym
---         , _box     = box'
---         , _boxes   = S.fromList[V2 6 4, V2 6 6]
---         , _walls   = wall
---         , _target  = target'
---         , _targets = S.fromList[V2 6 3, V2 6 7]
---         , _icefloors = S.fromList [V2 5 4, V2 5 6]
---         , _fragileFloors = S.fromList [V2 7 5]
---         , _holes         = S.empty
---         , _dir     = Up
---         , _score  = 0
---         , _suceess = False
---         , _dead    = False
---         , _num_target = 2
---         , _boxCat = S.fromList(["targets"])
---         , _boxIdx = M.singleton "targets" idx2
---         , _num_steps = 0
---         , _timer_seconds = 0
---         , _timer_running = False
---         , _game_mode = Single
---         , _ui_state = MainMenu
---         }
-
-
 boxidx :: IndexMap
 redidx = S.fromList [0]
 blueidx = S.fromList [1, 2]
@@ -749,12 +697,4 @@ simpleBox = Game
         , _boxIdx = (M.insert "red" (S.fromList [0, 1]) $ M.empty)
         , _num_steps = 0
         }
-
-
-
-
-
-
-
-
 
