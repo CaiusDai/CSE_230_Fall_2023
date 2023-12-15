@@ -241,7 +241,8 @@ checkSuccess g = checkHelper (M.toList (g^. boxIdx))
             else checkHelper rest 
 
 
--- Given a sequence of boxes and a sequence of targets, check which boxes are on targets
+
+
 -- return the list of boxes that are on target, wild boxes are not considered
 onTargetBox :: Game -> [Coord]
 onTargetBox g = checkHelper (M.toList (g^. boxIdx))
@@ -252,6 +253,7 @@ onTargetBox g = checkHelper (M.toList (g^. boxIdx))
           boxesSeq = indices2Seq indices (g^.boxes)
       in 
         filter (\coord -> coord `elem` (toList targetSeq)) (toList boxesSeq) ++ checkHelper rest
+
 
 -- Check if a box at a given index is in BoxIdx
 isBoxInBoxIdx :: Int -> Game -> Bool
@@ -681,6 +683,8 @@ fragilefloorBox = Game
         , _suceess = False
         , _dead    = False
         , _num_target = 1
+        , _timer_seconds = 0
+        , _timer_running = False
         -- boxes update
         , _timer_seconds = 0
         , _timer_running = False
@@ -715,6 +719,8 @@ doorBox = Game
         , _num_target = 1
         , _timer_seconds = 0
         , _timer_running = False
+
+        -- boxes update
         , _boxCat = S.fromList(["red"])
         , _boxIdx = (M.insert "red" (S.fromList [0]) M.empty)
         , _num_steps = 0
