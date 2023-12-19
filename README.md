@@ -156,3 +156,8 @@ To start the game, run the following command under folder *src*
 
 We also implemented unit testing, run the tests via  
 `cabal test`
+
+## Acknowledgement
+1. The code for our Sokoban game is original and all developed by ourselves. Before we started our project, we did look at the source code of this [snake](https://github.com/samtay/snake) game as a learning resource. This was primarily to familiarize ourselves with the Brick library and to understand the basic architecture of game design. Our reference to this snake game was minimal - only a few lines of code (< 10) for the high-level game structure. The rest of our code is entirely written by ourselves, as the usage of Brick Library in this snake game repo is deprecated, and our Sokoban game significantly differs in mechanics and features.
+
+2. Our Sokoban game differs from the snake game that we referenced to in every aspect, so our code for all features in our game are original and unique. The game's design, logic, and functionalities are completely developed by ourselves.
